@@ -2,7 +2,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { getQuizSessionWithQuestions, saveQuizResult } from "@/lib/data-access";
-import { evaluateQuizSubmissionTool } from "@/mastra/tools/resume-tools";
+import { evaluateQuizSubmission } from "@/mastra/tools/resume-tools";
 
 const inputSchema = z.object({
   sessionId: z.string().uuid(),
@@ -37,11 +37,7 @@ export async function POST(request: Request) {
       } as const;
     });
 
-    const result = await evaluateQuizSubmissionTool.execute?.({ answers: submissionInput });
-
-    if (!result) {
-      return NextResponse.json({ error: "Unable to evaluate quiz submission." }, { status: 500 });
-    }
+    const result = evaluateQuizSubmission(submissionInput);
 
     await saveQuizResult(auth.user, parsedInput.sessionId, {
       scorePercentage: result.scorePercentage,

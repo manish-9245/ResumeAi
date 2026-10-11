@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DashboardClient } from "@/components/resume-ai/dashboard-client";
 import { AuthControls } from "@/components/resume-ai/auth-controls";
+import { getDashboardData, listResumesForUser } from "@/lib/data-access";
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
@@ -13,6 +14,8 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const [resumes, dashboard] = await Promise.all([listResumesForUser(user), getDashboardData(user)]);
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl p-6 sm:p-10">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -23,7 +26,7 @@ export default async function DashboardPage() {
         <AuthControls email={user.email} />
       </header>
 
-      <DashboardClient />
+      <DashboardClient initialResumes={resumes} initialDashboard={dashboard} />
     </main>
   );
 }

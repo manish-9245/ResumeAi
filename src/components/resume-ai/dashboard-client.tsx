@@ -1,12 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 type ResumeItem = {
   id: string;
   file_name: string;
   resume_health_score: number;
   created_at: string;
+};
+
+type SkillGap = { skill: string; priority: string; rationale: string };
+
+type JobMatch = {
+  overallScore: number;
+  summary: string;
+  matchingSkills: string[];
+  missingSkills: SkillGap[];
+};
+
+type Roadmap = {
+  roadmapTitle: string;
+  milestones: Array<{ week: number; goal: string }>;
+};
+
+type ResumeImprovement = {
+  strengths: string[];
+  wordingImprovements: Array<{ section: string; improvedWording: string }>;
 };
 
 type QuizQuestion = {
@@ -17,21 +36,47 @@ type QuizQuestion = {
   options: string[];
 };
 
-export function DashboardClient() {
-  const [resumes, setResumes] = useState<ResumeItem[]>([]);
-  const [selectedResumeId, setSelectedResumeId] = useState<string>("");
+type QuizResult = {
+  scorePercentage: number;
+  correctAnswers: number;
+  totalQuestions: number;
+  verifiedSkills: string[];
+  needsPracticeSkills: string[];
+};
+
+type SkillSimulation = {
+  simulatedOverallScore: number;
+  delta: number;
+  note: string;
+};
+
+type DashboardPayload = {
+  scores: { avgResumeHealth: number; avgMatchScore: number; avgQuizScore: number };
+  verifiedSkills: string[];
+  nextSkillGaps: SkillGap[];
+};
+
+export function DashboardClient({
+  initialResumes,
+  initialDashboard,
+}: {
+  initialResumes: ResumeItem[];
+  initialDashboard: DashboardPayload;
+}) {
+  const [resumes, setResumes] = useState<ResumeItem[]>(initialResumes);
+  const [selectedResumeId, setSelectedResumeId] = useState<string>(initialResumes[0]?.id ?? "");
   const [jobDescription, setJobDescription] = useState("");
   const [analysisId, setAnalysisId] = useState("");
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [roadmap, setRoadmap] = useState<any>(null);
-  const [improvement, setImprovement] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<JobMatch | null>(null);
+  const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
+  const [improvement, setImprovement] = useState<ResumeImprovement | null>(null);
   const [simulationSkill, setSimulationSkill] = useState("");
-  const [simulation, setSimulation] = useState<any>(null);
+  const [simulation, setSimulation] = useState<SkillSimulation | null>(null);
   const [quizSessionId, setQuizSessionId] = useState("");
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
-  const [quizResult, setQuizResult] = useState<any>(null);
-  const [dashboard, setDashboard] = useState<any>(null);
+  const [quizResult, setQuizResult] = useState<QuizResult | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardPayload>(initialDashboard);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,16 +84,12 @@ export function DashboardClient() {
 
   const selectedResume = useMemo(() => resumes.find((resume) => resume.id === selectedResumeId) ?? null, [resumes, selectedResumeId]);
 
-  useEffect(() => {
-    void refreshCoreData();
-  }, []);
-
-  async function refreshCoreData() {
+  const refreshCoreData = useCallback(async () => {
     setError(null);
     const [resumesRes, dashboardRes] = await Promise.all([fetch("/api/resumes"), fetch("/api/dashboard")]);
 
-    const resumesJson = await resumesRes.json();
-    const dashboardJson = await dashboardRes.json();
+    const resumesJson = (await resumesRes.json()) as { resumes?: ResumeItem[]; error?: string };
+    const dashboardJson = (await dashboardRes.json()) as DashboardPayload & { error?: string };
 
     if (!resumesRes.ok) {
       setError(resumesJson.error ?? "Unable to load resumes");
@@ -60,13 +101,14 @@ export function DashboardClient() {
       return;
     }
 
-    setResumes(resumesJson.resumes ?? []);
+    const nextResumes = resumesJson.resumes ?? [];
+    setResumes(nextResumes);
     setDashboard(dashboardJson);
 
-    if (!selectedResumeId && resumesJson.resumes?.length) {
-      setSelectedResumeId(resumesJson.resumes[0].id);
+    if (!nextResumes.some((resume) => resume.id === selectedResumeId)) {
+      setSelectedResumeId(nextResumes[0]?.id ?? "");
     }
-  }
+  }, [selectedResumeId]);
 
   async function handleUpload(formData: FormData) {
     setBusy("upload");
@@ -77,8 +119,8 @@ export function DashboardClient() {
       body: formData,
     });
 
-    const json = await response.json();
-    if (!response.ok) {
+    const json = (await response.json()) as { resumeId?: string; error?: string };
+    if (!response.ok || !json.resumeId) {
       setError(json.error ?? "Upload failed");
       setBusy(null);
       return;
@@ -107,8 +149,8 @@ export function DashboardClient() {
       }),
     });
 
-    const json = await response.json();
-    if (!response.ok) {
+    const json = (await response.json()) as { analysisId?: string; analysis?: JobMatch; error?: string };
+    if (!response.ok || !json.analysisId || !json.analysis) {
       setError(json.error ?? "Match analysis failed");
       setBusy(null);
       return;
@@ -132,8 +174,8 @@ export function DashboardClient() {
       body: JSON.stringify({ analysisId, resumeId: selectedResumeId }),
     });
 
-    const json = await response.json();
-    if (!response.ok) {
+    const json = (await response.json()) as { roadmap?: Roadmap; error?: string };
+    if (!response.ok || !json.roadmap) {
       setError(json.error ?? "Roadmap generation failed");
       setBusy(null);
       return;
@@ -159,8 +201,8 @@ export function DashboardClient() {
       }),
     });
 
-    const json = await response.json();
-    if (!response.ok) {
+    const json = (await response.json()) as { simulation?: SkillSimulation; error?: string };
+    if (!response.ok || !json.simulation) {
       setError(json.error ?? "Simulation failed");
       setBusy(null);
       return;
@@ -182,8 +224,8 @@ export function DashboardClient() {
       body: JSON.stringify({ analysisId, resumeId: selectedResumeId }),
     });
 
-    const json = await response.json();
-    if (!response.ok) {
+    const json = (await response.json()) as { improvement?: ResumeImprovement; error?: string };
+    if (!response.ok || !json.improvement) {
       setError(json.error ?? "Improvement generation failed");
       setBusy(null);
       return;
@@ -205,15 +247,20 @@ export function DashboardClient() {
       body: JSON.stringify({ resumeId: selectedResumeId }),
     });
 
-    const json = await response.json();
-    if (!response.ok) {
+    const json = (await response.json()) as {
+      sessionId?: string;
+      questions?: QuizQuestion[];
+      error?: string;
+    };
+
+    if (!response.ok || !json.sessionId || !json.questions) {
       setError(json.error ?? "Quiz generation failed");
       setBusy(null);
       return;
     }
 
     setQuizSessionId(json.sessionId);
-    setQuizQuestions(json.questions ?? []);
+    setQuizQuestions(json.questions);
     setQuizAnswers({});
     setQuizResult(null);
     setBusy(null);
@@ -241,8 +288,8 @@ export function DashboardClient() {
       body: JSON.stringify({ sessionId: quizSessionId, answers }),
     });
 
-    const json = await response.json();
-    if (!response.ok) {
+    const json = (await response.json()) as { result?: QuizResult; error?: string };
+    if (!response.ok || !json.result) {
       setError(json.error ?? "Quiz submission failed");
       setBusy(null);
       return;
@@ -266,7 +313,7 @@ export function DashboardClient() {
           <Metric title="Verified Skills" value={`${dashboard?.verifiedSkills?.length ?? 0}`} />
         </div>
         <p className="mt-4 text-sm text-zinc-600">
-          Recommended next gaps: {(dashboard?.nextSkillGaps ?? []).map((gap: any) => gap.skill).join(", ") || "No gaps yet"}
+          Recommended next gaps: {(dashboard?.nextSkillGaps ?? []).map((gap) => gap.skill).join(", ") || "No gaps yet"}
         </p>
       </section>
 
@@ -332,7 +379,7 @@ export function DashboardClient() {
               <span className="font-semibold">Matching:</span> {analysis.matchingSkills.join(", ") || "-"}
             </p>
             <p>
-              <span className="font-semibold">Missing:</span> {analysis.missingSkills.map((item: any) => `${item.skill} (${item.priority})`).join(", ") || "-"}
+              <span className="font-semibold">Missing:</span> {analysis.missingSkills.map((item) => `${item.skill} (${item.priority})`).join(", ") || "-"}
             </p>
           </div>
         ) : null}
@@ -369,7 +416,7 @@ export function DashboardClient() {
           <div className="mt-4 space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm">
             <p className="font-semibold">{roadmap.roadmapTitle}</p>
             <ul className="list-inside list-disc space-y-1">
-              {roadmap.milestones.map((milestone: any) => (
+              {roadmap.milestones.map((milestone) => (
                 <li key={`${milestone.week}-${milestone.goal}`}>
                   Week {milestone.week}: {milestone.goal}
                 </li>
@@ -407,7 +454,7 @@ export function DashboardClient() {
               <span className="font-semibold">Strengths:</span> {improvement.strengths.join(", ")}
             </p>
             <ul className="list-inside list-disc space-y-1">
-              {improvement.wordingImprovements.map((item: any, index: number) => (
+              {improvement.wordingImprovements.map((item, index) => (
                 <li key={index}>
                   [{item.section}] {item.improvedWording}
                 </li>

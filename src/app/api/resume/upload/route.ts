@@ -1,9 +1,9 @@
-import pdf from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { parseResumeWithMastra } from "@/mastra/service";
-import { computeResumeHealthTool } from "@/mastra/tools/resume-tools";
+import { computeResumeHealth } from "@/mastra/tools/resume-tools";
 import { saveResumeRecord } from "@/lib/data-access";
 
 const MAX_PDF_SIZE_BYTES = 8 * 1024 * 1024;
@@ -30,7 +30,11 @@ export async function POST(request: Request) {
 
     const arrayBuffer = await file.arrayBuffer();
     const fileBuffer = Buffer.from(arrayBuffer);
-    const parsedPdf = await pdf(fileBuffer);
+
+    const parser = new PDFParse({ data: fileBuffer });
+    const parsedPdf = await parser.getText();
+    await parser.destroy();
+
     const rawText = parsedPdf.text?.trim();
 
     if (!rawText || rawText.length < 80) {
@@ -54,11 +58,7 @@ export async function POST(request: Request) {
     }
 
     const parsedProfile = await parseResumeWithMastra(rawText);
-    const healthResult = await computeResumeHealthTool.execute?.({ parsedProfile });
-
-    if (!healthResult) {
-      return NextResponse.json({ error: "Failed to score resume profile." }, { status: 500 });
-    }
+    const healthResult = computeResumeHealth(parsedProfile);
 
     const resumeId = await saveResumeRecord(auth.user, {
       fileName: file.name,
