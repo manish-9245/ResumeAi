@@ -169,10 +169,10 @@ export function parseResumeText(text: string): ParsedProfile {
   const listedSet = new Set(listed);
   skills = skills.filter((s) => s.length > 2 || listedSet.has(s) || countMentions(text, s) >= 2);
 
-  const education = entriesFromSection(sections.education ?? [], 5, 160);
-  let experience = entriesFromSection(sections.experience ?? [], 6, 180);
-  let projects = entriesFromSection(sections.projects ?? [], 6, 180);
-  const certifications = entriesFromSection(sections.certifications ?? [], 5, 140);
+  const education = entriesFromSection(sections.education ?? [], 8, 500);
+  let experience = entriesFromSection(sections.experience ?? [], 10, 2000);
+  let projects = entriesFromSection(sections.projects ?? [], 10, 2000);
+  const certifications = entriesFromSection(sections.certifications ?? [], 8, 500);
 
   // Fallback for header-less pastes: keyword capture so fragments still analyze.
   if (Object.keys(sections).length === 0) {
@@ -181,8 +181,8 @@ export function parseResumeText(text: string): ParsedProfile {
       for (const l of lines) {
         if (keys.some((k) => l.toLowerCase().includes(k))) {
           const c = l.replace(/\s+/g, " ").trim();
-          if (c.length > 10) out.push(c.slice(0, 180));
-          if (out.length >= 5) break;
+          if (c.length > 10) out.push(c.slice(0, 1500));
+          if (out.length >= 8) break;
         }
       }
       return out;

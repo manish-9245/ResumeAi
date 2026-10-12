@@ -48,9 +48,9 @@ export function AnalyzingSteps({ stage }: { stage: number }) {
 export function DossierSkeleton() {
   return (
     <div className="grid gap-4" aria-hidden>
-      <div className="flex items-center gap-5">
-        <Skeleton className="rounded-full!" style={{ width: 118, height: 118, borderRadius: 999 }} />
-        <div className="grid flex-1 gap-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex justify-center sm:shrink-0"><Skeleton className="rounded-full!" style={{ width: 118, height: 118, borderRadius: 999 }} /></div>
+        <div className="grid min-w-0 flex-1 gap-2">
           <Skeleton style={{ height: 20, width: "55%" }} />
           <div className="flex gap-1.5"><Skeleton style={{ height: 22, width: 64 }} /><Skeleton style={{ height: 22, width: 58 }} /><Skeleton style={{ height: 22, width: 70 }} /></div>
         </div>
@@ -89,12 +89,12 @@ export function RailSkeleton() {
   return (
     <div className="grid gap-0" aria-hidden>
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="grid gap-3 sm:grid-cols-[64px_1fr]">
-          <div className="flex sm:flex-col items-center gap-2 pt-5">
+        <div key={i} className="grid gap-2 sm:grid-cols-[64px_1fr] sm:gap-3">
+          <div className="flex flex-row items-center gap-2 pt-3 sm:flex-col sm:pt-5">
             <Skeleton style={{ width: 40, height: 40, borderRadius: 999 }} />
-            {i < 3 && <span className="w-0.5 flex-1 sm:min-h-[70px]" style={{ background: "#E2E8F2" }} />}
+            {i < 3 && <span className="hidden w-0.5 flex-1 sm:block sm:min-h-[70px]" style={{ background: "#E2E8F2" }} />}
           </div>
-          <div className="card mb-3 p-5">
+          <div className="card mb-3 min-w-0 p-4 sm:p-5">
             <Skeleton style={{ height: 12, width: "30%", marginBottom: 10 }} />
             <Skeleton style={{ height: 20, width: "60%", marginBottom: 10 }} />
             <Skeleton style={{ height: 12, width: "90%", marginBottom: 6 }} />

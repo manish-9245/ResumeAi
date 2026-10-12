@@ -58,14 +58,14 @@ function RoadmapInner() {
   return (
     <AppShell requireAuth title="Learning roadmap" sub="Ordered by hiring leverage, not alphabet. Each step ends with a provable artifact — a link you can put on your resume.">
       {withDb.length > 0 && (
-        <div className="card mb-3 flex flex-wrap items-center gap-2 p-4">
+        <div className="card mb-3 flex flex-col gap-2 p-4 sm:flex-row sm:flex-wrap sm:items-center">
           <span className="text-[13px] font-bold">Roadmap for:</span>
           <select value={jobSel} onChange={(e) => setJobSel(e.target.value)} aria-label="Roadmap job"
-            className="min-w-0 flex-1 rounded-[10px] border bg-white px-3 py-2.5 text-[13px] font-medium sm:max-w-[320px]" style={{ borderColor: "#E2E8F2" }}>
+            className="min-w-0 w-full rounded-[10px] border bg-white px-3 py-2.5 text-[13px] font-medium sm:flex-1 sm:max-w-[320px]" style={{ borderColor: "#E2E8F2" }}>
             <option value="">General (top gaps)</option>
             {withDb.map((j) => <option key={j.dbId} value={j.dbId!}>{j.title} @ {j.company} ({j.matchScore}%)</option>)}
           </select>
-          <button onClick={() => build()} disabled={busy} className="btn-primary flex items-center gap-1.5 px-4 py-2.5 text-[13px]">
+          <button onClick={() => build()} disabled={busy} className="btn-primary flex min-h-[44px] items-center justify-center gap-1.5 px-4 py-2.5 text-[13px]">
             {busy ? <Loader2 size={14} className="animate-spin" /> : <MapIcon size={14} />} Rebuild
           </button>
         </div>
@@ -76,20 +76,20 @@ function RoadmapInner() {
         <button onClick={() => build()} disabled={busy} className="btn-primary flex items-center gap-2 px-5 py-3 text-[14px]"><MapIcon size={16} /> Build my roadmap</button>
       )}
       {!busy && roadmapId && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[13px] font-medium" style={{ background: fromCache ? "#E6F7EE" : "#F2F5FF", color: fromCache ? "#0B7A55" : "#1E40D8" }}>
+        <div className="mb-3 flex flex-col gap-2 rounded-[10px] px-3.5 py-2.5 text-[13px] font-medium sm:flex-row sm:flex-wrap sm:items-center" style={{ background: fromCache ? "#E6F7EE" : "#F2F5FF", color: fromCache ? "#0B7A55" : "#1E40D8" }}>
           {fromCache ? "Loaded your saved roadmap." : `Saved${selJob ? ` for ${selJob.title}` : ""}.`}
-          <a href={`/roadmap/${roadmapId}`} className="ml-auto flex items-center gap-1 font-bold">Open /roadmap/{roadmapId.slice(0, 8)} <ArrowRight size={13} /></a>
+          <a href={`/roadmap/${roadmapId}`} className="flex min-h-[40px] items-center gap-1 font-bold sm:ml-auto">Open /roadmap/{roadmapId.slice(0, 8)} <ArrowRight size={13} /></a>
         </div>
       )}
       {steps.length > 0 && !busy && (
         <div className="grid gap-0">
           {steps.map((s, i) => (
-            <div key={s.order} className="rise grid gap-3 sm:grid-cols-[64px_1fr]" style={{ animationDelay: `${i * 0.06}s` }}>
-              <div className="flex sm:flex-col items-center gap-2 pt-5">
-                <span className="font-data grid h-10 w-10 place-items-center rounded-full font-bold text-white" style={{ background: i === steps.length - 1 ? "#0E9F6E" : "#2B5CFF" }}>{s.order}</span>
-                {i < steps.length - 1 && <span className="w-0.5 flex-1 sm:min-h-[90px]" style={{ background: "#E2E8F2" }} />}
+            <div key={s.order} className="rise grid gap-2 sm:grid-cols-[64px_1fr] sm:gap-3" style={{ animationDelay: `${i * 0.06}s` }}>
+              <div className="flex flex-row items-center gap-2 pt-3 sm:flex-col sm:pt-5">
+                <span className="font-data grid h-10 w-10 shrink-0 place-items-center rounded-full font-bold text-white" style={{ background: i === steps.length - 1 ? "#0E9F6E" : "#2B5CFF" }}>{s.order}</span>
+                {i < steps.length - 1 && <span className="hidden w-0.5 flex-1 sm:block sm:min-h-[90px]" style={{ background: "#E2E8F2" }} />}
               </div>
-              <div className="card mb-3 p-5">
+              <div className="card mb-3 min-w-0 p-4 sm:p-5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-data text-[11px] font-bold" style={{ color: "#3F4A63" }}>{s.weeks.toUpperCase()}</span>
                   {s.skills.map((k) => <Chip key={k} tone="info">{k}</Chip>)}
@@ -104,14 +104,14 @@ function RoadmapInner() {
       )}
 
       {history.length > 0 && !busy && (
-        <div className="card mt-3 p-5">
+        <div className="card mt-3 min-w-0 p-4 sm:p-5">
           <div className="flex items-center gap-2 font-display text-[15px] font-bold"><History size={15} /> Saved roadmaps</div>
           <div className="mt-2.5 grid gap-2">
             {history.map((h) => (
-              <a key={h.id} href={`/roadmap/${h.id}`} className="flex items-center gap-2 rounded-[10px] border px-3.5 py-2.5 text-[13px] hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
+              <a key={h.id} href={`/roadmap/${h.id}`} className="flex min-w-0 items-center gap-2 rounded-[10px] border px-3.5 py-2.5 text-[13px] hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
                 <b className="min-w-0 flex-1 truncate">{h.title}</b>
-                <span style={{ color: "#3F4A63" }}>{new Date(h.created_at).toLocaleDateString()}</span>
-                <ArrowRight size={13} color="#2B5CFF" />
+                <span className="shrink-0" style={{ color: "#3F4A63" }}>{new Date(h.created_at).toLocaleDateString()}</span>
+                <ArrowRight size={13} color="#2B5CFF" className="shrink-0" />
               </a>
             ))}
           </div>

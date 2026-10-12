@@ -71,7 +71,7 @@ function SessionList({ sessions, activeId, onSelect, onDelete }: {
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}
             aria-label={`Delete ${s.title}`} title="Delete chat"
-            className="shrink-0 rounded-md p-1 opacity-0 hover:bg-red-50 focus:opacity-100 group-hover:opacity-100" style={{ color: "#DC2626" }}>
+            className="shrink-0 rounded-md p-2 hover:bg-red-50 focus:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" style={{ color: "#DC2626" }}>
             <Trash2 size={13} />
           </button>
         </div>
@@ -164,24 +164,24 @@ export default function AssistantPage() {
         )}
 
         {/* Chat column */}
-        <div className="card flex min-h-[62vh] min-w-0 flex-col overflow-hidden">
-          <header className="flex min-w-0 items-center gap-2.5 border-b px-4 py-3" style={{ borderColor: "#E2E8F2" }}>
-            <button onClick={() => setDrawer(true)} aria-label="Open chats" className="rounded-lg border p-2 lg:hidden" style={{ borderColor: "#E2E8F2" }}>
+        <div className="card flex min-h-[60dvh] min-w-0 flex-col overflow-hidden sm:min-h-[62vh]">
+          <header className="flex min-w-0 items-center gap-2 border-b px-3 py-2.5 sm:gap-2.5 sm:px-4 sm:py-3" style={{ borderColor: "#E2E8F2" }}>
+            <button onClick={() => setDrawer(true)} aria-label="Open chats" className="min-h-[40px] min-w-[40px] shrink-0 place-items-center rounded-lg border p-2 grid lg:hidden" style={{ borderColor: "#E2E8F2" }}>
               <PanelLeft size={15} />
             </button>
             <Image src="/logo.png" alt="" width={28} height={28} className="shrink-0 rounded-[8px]" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13.5px] font-bold">{active?.title ?? "New chat"}</div>
-              <div className="font-data text-[10px] font-bold" style={{ color: "#0E9F6E" }}>
+              <div className="font-data truncate text-[10px] font-bold" style={{ color: "#0E9F6E" }}>
                 {busy ? "THINKING…" : `${chat.length} MESSAGES · GROUNDED IN YOUR PROFILE`}
               </div>
             </div>
-            <button onClick={newChatSession} aria-label="New chat" title="New chat" className="shrink-0 rounded-[10px] border p-2 hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
+            <button onClick={newChatSession} aria-label="New chat" title="New chat" className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
               <Plus size={15} />
             </button>
           </header>
 
-          <div className="grid flex-1 content-start gap-4 overflow-y-auto p-4" aria-live="polite">
+          <div className="grid flex-1 content-start gap-4 overflow-y-auto p-3 sm:p-4" aria-live="polite">
             {chat.length === 0 && (
               <div className="grid justify-items-center gap-3 py-8 text-center">
                 <span className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: "#EAF0FF" }}>
@@ -194,8 +194,8 @@ export default function AssistantPage() {
               </div>
             )}
             {chat.map((m, i) => m.role === "user" ? (
-              <div key={`${activeId}-${i}`} className="flex justify-end gap-2">
-                <div className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5 text-[13.5px] leading-6 text-white [overflow-wrap:anywhere]" style={{ background: "#2B5CFF" }}>
+              <div key={`${activeId}-${i}`} className="flex min-w-0 justify-end gap-2">
+                <div className="max-w-[88%] rounded-2xl rounded-br-md px-4 py-2.5 text-[13.5px] leading-6 text-white break-words [overflow-wrap:anywhere] sm:max-w-[85%]" style={{ background: "#2B5CFF" }}>
                   {m.text}
                 </div>
                 <span className="font-display grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12px] font-bold text-white" style={{ background: "#0E1525" }} aria-hidden>
@@ -203,9 +203,9 @@ export default function AssistantPage() {
                 </span>
               </div>
             ) : (
-              <div key={`${activeId}-${i}`} className="flex gap-2.5">
+              <div key={`${activeId}-${i}`} className="flex min-w-0 gap-2 sm:gap-2.5">
                 <Image src="/logo.png" alt="" width={28} height={28} className="h-7 w-7 shrink-0 rounded-[8px]" />
-                <div className="min-w-0 max-w-[92%] flex-1 rounded-2xl rounded-tl-md border px-4 py-3" style={{ borderColor: "#E2E8F2", background: "#fff" }}>
+                <div className="min-w-0 max-w-[94%] flex-1 rounded-2xl rounded-tl-md border px-3 py-2.5 sm:max-w-[92%] sm:px-4 sm:py-3" style={{ borderColor: "#E2E8F2", background: "#fff" }}>
                   <AssistantText text={m.text} />
                 </div>
               </div>
@@ -214,22 +214,22 @@ export default function AssistantPage() {
             <div ref={bottom} />
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="border-t p-3" style={{ borderColor: "#E2E8F2" }}>
-            <div className="flex items-end gap-2 rounded-2xl border p-2 pl-4 focus-within:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2", background: "#F7F9FF" }}>
+          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]" style={{ borderColor: "#E2E8F2", background: "#fff" }}>
+            <div className="flex min-w-0 items-end gap-2 rounded-2xl border p-2 pl-3 sm:pl-4 focus-within:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2", background: "#F7F9FF" }}>
               <textarea
                 ref={box} value={msg} rows={1}
                 onChange={(e) => { setMsg(e.target.value); autogrow(); }}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                 placeholder="Ask anything — gaps, roles, roadmap order…"
                 aria-label="Ask assistant" disabled={busy}
-                className="max-h-[140px] w-full resize-none bg-transparent py-2 text-[13.5px] leading-6 outline-none placeholder:text-[#8B95B0]"
+                className="max-h-[140px] min-w-0 w-full flex-1 resize-none bg-transparent py-2 text-[13.5px] leading-6 outline-none placeholder:text-[#8B95B0]"
               />
               <button type="submit" disabled={busy || !msg.trim()} aria-label="Send"
-                className="btn-primary grid h-10 w-10 shrink-0 place-items-center rounded-xl disabled:opacity-50">
+                className="btn-primary grid h-11 w-11 shrink-0 place-items-center rounded-xl disabled:opacity-50">
                 <Send size={16} />
               </button>
             </div>
-            <div className="mt-1.5 px-1 text-[11px]" style={{ color: "#8B95B0" }}>Enter to send · Shift+Enter for a new line · answers stay in this chat</div>
+            <div className="mt-1.5 hidden px-1 text-[11px] sm:block" style={{ color: "#8B95B0" }}>Enter to send · Shift+Enter for a new line · answers stay in this chat</div>
           </form>
         </div>
       </div>

@@ -149,49 +149,53 @@ export default function QuizPage() {
 
       {/* Running: one question at a time */}
       {!busy && !setupOpen && qs.length > 0 && !done && q && (
-        <div className="mt-3">
-          <div className="flex items-center gap-1.5" role="tablist" aria-label="Questions">
+        <div className="mt-3 min-w-0">
+          <div className="flex items-center gap-1" role="tablist" aria-label="Questions">
             {qs.map((item, i) => (
               <button
                 key={item.id} role="tab" aria-selected={i === idx} aria-label={`Question ${i + 1}${ans[item.id] !== undefined ? " (answered)" : ""}`}
                 onClick={() => setIdx(i)}
-                className="h-2 flex-1 rounded-full transition-all"
-                style={{ background: ans[item.id] !== undefined ? "#0E9F6E" : i === idx ? "#2B5CFF" : "#E2E8F2" }}
-              />
+                className="grid min-h-[28px] flex-1 place-items-center px-0.5"
+              >
+                <span
+                  className="h-2 w-full rounded-full transition-all"
+                  style={{ background: ans[item.id] !== undefined ? "#0E9F6E" : i === idx ? "#2B5CFF" : "#E2E8F2" }}
+                />
+              </button>
             ))}
           </div>
 
-          <div key={q.id} className="card card-elev rise mt-3 p-6">
-            <div className="flex items-center gap-2 text-[12px] font-bold" style={{ color: "#3F4A63" }}>
+          <div key={q.id} className="card card-elev rise mt-3 min-w-0 p-4 sm:p-6">
+            <div className="flex flex-wrap items-center gap-2 text-[12px] font-bold" style={{ color: "#3F4A63" }}>
               <span className="font-data">Q{idx + 1} / {qs.length}</span> <Chip tone="info">{q.skill}</Chip>
             </div>
-            <div className="font-display mt-2 text-[19px] font-bold leading-snug">{q.question}</div>
+            <div className="font-display mt-2 text-[17px] font-bold leading-snug sm:text-[19px]">{q.question}</div>
             <div className="mt-4 grid gap-2">
               {q.options.map((o, k) => {
                 const picked = ans[q.id] === k;
                 return (
                   <button key={k} onClick={() => pick(q.id, k)}
                     aria-pressed={picked}
-                    className="rounded-[12px] border px-4 py-3 text-left text-[14px] font-medium transition-all"
+                    className="min-w-0 rounded-[12px] border px-4 py-3 text-left text-[14px] font-medium transition-all"
                     style={{ borderColor: picked ? "#2B5CFF" : "#E2E8F2", background: picked ? "#F2F5FF" : "#fff", borderWidth: picked ? 2 : 1, padding: picked ? "11px 15px" : undefined }}>
                     <span className="font-data mr-2.5 font-bold" style={{ color: picked ? "#1E40D8" : "#3F4A63" }}>{String.fromCharCode(65 + k)}</span> {o}
                   </button>
                 );
               })}
             </div>
-            <div className="mt-5 flex items-center justify-between">
+            <div className="mt-5 flex items-center justify-between gap-2">
               <button onClick={() => setIdx((i) => Math.max(0, i - 1))} disabled={idx === 0}
-                className="rounded-[12px] border px-4 py-2.5 text-[13px] font-bold disabled:opacity-40" style={{ borderColor: "#E2E8F2", background: "#fff" }}>
+                className="min-h-[44px] rounded-[12px] border px-4 py-2.5 text-[13px] font-bold disabled:opacity-40" style={{ borderColor: "#E2E8F2", background: "#fff" }}>
                 ← Back
               </button>
               {idx < qs.length - 1 ? (
                 <button onClick={() => setIdx((i) => Math.min(qs.length - 1, i + 1))}
-                  className="rounded-[12px] border px-4 py-2.5 text-[13px] font-bold" style={{ borderColor: "#2B5CFF", color: "#1E40D8", background: "#fff" }}>
+                  className="min-h-[44px] rounded-[12px] border px-4 py-2.5 text-[13px] font-bold" style={{ borderColor: "#2B5CFF", color: "#1E40D8", background: "#fff" }}>
                   Skip →
                 </button>
               ) : (
                 <button onClick={submit} disabled={answered < qs.length}
-                  className="btn-primary px-6 py-2.5 text-[13px] disabled:opacity-50" title={answered < qs.length ? `Answer ${qs.length - answered} more to submit` : "Submit quiz"}>
+                  className="btn-primary min-h-[44px] px-6 py-2.5 text-[13px] disabled:opacity-50" title={answered < qs.length ? `Answer ${qs.length - answered} more to submit` : "Submit quiz"}>
                   Submit ({answered}/{qs.length})
                 </button>
               )}
@@ -202,8 +206,8 @@ export default function QuizPage() {
 
       {/* Done: score + full review */}
       {done && (
-        <div className="card mt-3 p-5 rise" style={{ background: score >= Math.ceil(qs.length * 0.65) ? "#E6F7EE" : "#FFF4D6", borderColor: score >= Math.ceil(qs.length * 0.65) ? "#0E9F6E" : "#B45309" }}>
-          <div className="font-display text-[20px] font-bold">{score}/{qs.length} verified {score >= Math.ceil(qs.length * 0.65) ? "— claims hold up." : "— re-learn the misses below."}</div>
+        <div className="card mt-3 min-w-0 p-4 rise sm:p-5" style={{ background: score >= Math.ceil(qs.length * 0.65) ? "#E6F7EE" : "#FFF4D6", borderColor: score >= Math.ceil(qs.length * 0.65) ? "#0E9F6E" : "#B45309" }}>
+          <div className="font-display text-[18px] font-bold leading-snug sm:text-[20px]">{score}/{qs.length} verified {score >= Math.ceil(qs.length * 0.65) ? "— claims hold up." : "— re-learn the misses below."}</div>
           <div className="mt-1 text-[13px]" style={{ color: "#3F4A63" }}>
             Saved to your dashboard as Verified Skills{attemptId ? <> + stored as <a href={`/quiz/${attemptId}`} className="font-bold" style={{ color: "#1E40D8" }}>permanent review ↗</a></> : " (sign in to keep a permanent review link)"}. Retake anytime after studying the roadmap.
           </div>
@@ -212,9 +216,9 @@ export default function QuizPage() {
       {done && (
         <div className="mt-3 grid gap-2.5">
           {qs.map((item, i) => (
-            <div key={item.id} className="card p-5">
-              <div className="flex items-center gap-2 text-[12px] font-bold" style={{ color: "#3F4A63" }}><span className="font-data">Q{i + 1}</span> <Chip tone="info">{item.skill}</Chip></div>
-              <div className="font-display mt-1.5 text-[15.5px] font-bold">{item.question}</div>
+            <div key={item.id} className="card min-w-0 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center gap-2 text-[12px] font-bold" style={{ color: "#3F4A63" }}><span className="font-data">Q{i + 1}</span> <Chip tone="info">{item.skill}</Chip></div>
+              <div className="font-display mt-1.5 text-[15px] font-bold leading-snug sm:text-[15.5px]">{item.question}</div>
               <div className="mt-2.5 grid gap-1.5">
                 {item.options.map((o, k) => {
                   const picked = ans[item.id] === k;
@@ -235,14 +239,14 @@ export default function QuizPage() {
         </div>
       )}
       {history.length > 0 && (
-        <div className="card mt-3 p-5">
+        <div className="card mt-3 min-w-0 p-4 sm:p-5">
           <div className="font-display text-[15px] font-bold">Past attempts</div>
           <div className="mt-2.5 grid gap-2">
             {history.map((h) => (
-              <a key={h.id} href={`/quiz/${h.id}`} className="flex items-center gap-2 rounded-[10px] border px-3.5 py-2.5 text-[13px] hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
-                <span className="font-data font-bold" style={{ color: h.score >= Math.ceil(h.count * 0.65) ? "#0B7A55" : "#92580A" }}>{h.score}/{h.count}</span>
+              <a key={h.id} href={`/quiz/${h.id}`} className="flex min-w-0 items-center gap-2 rounded-[10px] border px-3.5 py-2.5 text-[13px] hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
+                <span className="font-data shrink-0 font-bold" style={{ color: h.score >= Math.ceil(h.count * 0.65) ? "#0B7A55" : "#92580A" }}>{h.score}/{h.count}</span>
                 <span className="min-w-0 flex-1 truncate" style={{ color: "#3F4A63" }}>{(h.topics ?? []).slice(0, 4).join(", ")}</span>
-                <span style={{ color: "#3F4A63" }}>{new Date(h.created_at).toLocaleDateString()}</span>
+                <span className="shrink-0" style={{ color: "#3F4A63" }}>{new Date(h.created_at).toLocaleDateString()}</span>
               </a>
             ))}
           </div>

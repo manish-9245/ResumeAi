@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const ok = await upsertProfile(auth.userId, auth.sb, {
       name: String((profile as { name?: unknown }).name ?? "Candidate").slice(0, 80),
       email: String((profile as { email?: unknown }).email ?? ""),
-      resume_text: String(resumeText ?? "").slice(0, 8000),
+      resume_text: String(resumeText ?? "").slice(0, 20000),
       parsed: profile,
       health: body.health ?? {},
     }).catch(() => false);

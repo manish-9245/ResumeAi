@@ -21,12 +21,30 @@
 
 html, body { height: 100%; }
 
+html { overflow-x: clip; }
+
 body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
+
+/* Prevent iOS auto-zoom on focus: form controls stay 16px on small screens. */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* Hide scrollbars on horizontal chip rails while keeping swipe. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 .font-display { font-family: var(--font-display); }
 .font-data { font-family: var(--font-data); }

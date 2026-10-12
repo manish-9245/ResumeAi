@@ -29,12 +29,12 @@ export default async function RoadmapDetail({ params }: { params: Promise<{ id: 
       )}
       <div className="grid gap-0">
         {steps.map((s, i) => (
-          <div key={s.order} className="grid gap-3 sm:grid-cols-[64px_1fr]">
-            <div className="flex sm:flex-col items-center gap-2 pt-5">
-              <span className="font-data grid h-10 w-10 place-items-center rounded-full font-bold text-white" style={{ background: i === steps.length - 1 ? "#0E9F6E" : "#2B5CFF" }}>{s.order}</span>
-              {i < steps.length - 1 && <span className="w-0.5 flex-1 sm:min-h-[90px]" style={{ background: "#E2E8F2" }} />}
+          <div key={s.order} className="grid gap-2 sm:grid-cols-[64px_1fr] sm:gap-3">
+            <div className="flex flex-row items-center gap-2 pt-3 sm:flex-col sm:pt-5">
+              <span className="font-data grid h-10 w-10 shrink-0 place-items-center rounded-full font-bold text-white" style={{ background: i === steps.length - 1 ? "#0E9F6E" : "#2B5CFF" }}>{s.order}</span>
+              {i < steps.length - 1 && <span className="hidden w-0.5 flex-1 sm:block sm:min-h-[90px]" style={{ background: "#E2E8F2" }} />}
             </div>
-            <div className="card mb-3 p-5">
+            <div className="card mb-3 min-w-0 p-4 sm:p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-data text-[11px] font-bold" style={{ color: "#3F4A63" }}>{s.weeks.toUpperCase()}</span>
                 {s.skills.map((k) => <Chip key={k} tone="info">{k}</Chip>)}

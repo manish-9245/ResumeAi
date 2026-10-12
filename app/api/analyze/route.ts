@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     let analysisId: string | null = null;
     if (auth) {
       analysisId = await saveAnalysis(auth.userId, auth.sb, {
-        resume_hash: hash, resume_text: text.slice(0, 8000),
+        resume_hash: hash, resume_text: text.slice(0, 20000),
         parsed: result.profile, health: result.health, ai_note: result.aiNote ?? "",
       }).catch(() => null);
     }

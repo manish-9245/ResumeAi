@@ -41,13 +41,13 @@ function EditableEntries({ items, onChange, addLabel, emptyHint }: {
 
   function commitEdit(i: number) {
     const v = draft.trim();
-    if (v) onChange(items.map((x, k) => (k === i ? v.slice(0, 220) : x)));
+    if (v) onChange(items.map((x, k) => (k === i ? v.slice(0, 2000) : x)));
     setEditing(null);
   }
 
   function commitAdd() {
     const v = newItem.trim();
-    if (v) onChange([...items, v.slice(0, 220)]);
+    if (v) onChange([...items, v.slice(0, 2000)]);
     setNewItem(""); setAdding(false);
   }
 
@@ -63,9 +63,9 @@ function EditableEntries({ items, onChange, addLabel, emptyHint }: {
           ) : (
             <div className="flex items-start gap-2">
               <button onClick={() => { setDraft(item); setEditing(i); }} title="Edit" aria-label="Edit entry"
-                className="min-w-0 flex-1 py-1 text-left text-[13px] leading-5 hover:text-[#1E40D8]">{item}</button>
-              <button onClick={() => onChange(items.filter((_, k) => k !== i))} title="Delete" aria-label="Delete entry"
-                className="shrink-0 rounded-md p-1 opacity-0 hover:bg-red-50 focus:opacity-100 group-hover:opacity-100" style={{ color: "#DC2626" }}>
+                className="min-w-0 flex-1 break-words whitespace-pre-wrap py-1 text-left text-[13px] leading-5 hover:text-[#1E40D8]">{item}</button>
+                <button onClick={() => onChange(items.filter((_, k) => k !== i))} title="Delete" aria-label="Delete entry"
+                className="shrink-0 rounded-md p-2 hover:bg-red-50 focus:opacity-100 lg:opacity-0 lg:group-hover:opacity-100" style={{ color: "#DC2626" }}>
                 <Trash2 size={13} />
               </button>
             </div>
@@ -192,7 +192,7 @@ export default function ProfilePage() {
   return (
     <AppShell requireAuth title="Candidate profile" sub="Everything here is editable — fix our parsing mistakes in place. Roadmap, quiz and assistant read from this.">
       {/* Identity header */}
-      <div className="card card-elev rise grid gap-5 p-6 sm:grid-cols-[auto_1fr_auto] sm:items-center" style={{ background: "#fff" }}>
+      <div className="card card-elev rise grid min-w-0 gap-5 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-6" style={{ background: "#fff" }}>
         <span className="font-display grid h-16 w-16 place-items-center rounded-2xl text-[26px] font-extrabold text-white" style={{ background: "#2B5CFF" }} aria-hidden>
           {(name || profile.name).trim().charAt(0).toUpperCase()}
         </span>
@@ -201,42 +201,42 @@ export default function ProfilePage() {
             {editingName ? (
               <input value={name} onChange={(e) => { setName(e.target.value); mark(); }} autoFocus
                 onKeyDown={(e) => { if (e.key === "Enter") setEditingName(false); }}
-                className="font-display w-full max-w-[280px] rounded-[10px] border px-2.5 py-1 text-[20px] font-bold" style={{ borderColor: "#2B5CFF" }} aria-label="Display name" />
+                className="font-display w-full min-w-0 rounded-[10px] border px-2.5 py-1 text-[20px] font-bold sm:max-w-[280px]" style={{ borderColor: "#2B5CFF" }} aria-label="Display name" />
             ) : (
-              <span className="font-display text-[22px] font-bold">{name || profile.name}</span>
+              <span className="font-display min-w-0 break-words text-[20px] font-bold sm:text-[22px]">{name || profile.name}</span>
             )}
             <button onClick={() => setEditingName(!editingName)} aria-label="Edit name"
-              className="rounded-lg p-1.5 hover:bg-black/5" style={{ color: "#3F4A63" }}>
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-lg hover:bg-black/5" style={{ color: "#3F4A63" }}>
               {editingName ? <Check size={15} /> : <Pencil size={14} />}
             </button>
           </div>
           <div className="mt-1.5 grid max-w-[420px] gap-1.5 sm:grid-cols-2">
-            <label className="flex items-center gap-1.5 rounded-[8px] border px-2 py-1.5 text-[12px]" style={{ borderColor: "#E2E8F2", background: "#F7F9FF" }}>
+            <label className="flex min-w-0 items-center gap-1.5 rounded-[8px] border px-2 py-1.5 text-[12px]" style={{ borderColor: "#E2E8F2", background: "#F7F9FF" }}>
               <Mail size={12} className="shrink-0" style={{ color: "#7A86A3" }} />
               <input value={email} onChange={(e) => { setEmail(e.target.value); mark(); }} placeholder="email@example.com" aria-label="Contact email"
                 className="w-full min-w-0 bg-transparent" style={{ color: "#0E1525" }} />
             </label>
-            <label className="flex items-center gap-1.5 rounded-[8px] border px-2 py-1.5 text-[12px]" style={{ borderColor: "#E2E8F2", background: "#F7F9FF" }}>
+            <label className="flex min-w-0 items-center gap-1.5 rounded-[8px] border px-2 py-1.5 text-[12px]" style={{ borderColor: "#E2E8F2", background: "#F7F9FF" }}>
               <Phone size={12} className="shrink-0" style={{ color: "#7A86A3" }} />
               <input value={phone} onChange={(e) => { setPhone(e.target.value); mark(); }} placeholder="+91 …" aria-label="Phone"
                 className="w-full min-w-0 bg-transparent" style={{ color: "#0E1525" }} />
             </label>
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <Link2 size={12} style={{ color: "#7A86A3" }} />
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
+            <Link2 size={12} className="shrink-0" style={{ color: "#7A86A3" }} />
             {links.map((l) => (
-              <span key={l} className="font-data flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]" style={{ background: "#EAF0FF", color: "#1E40D8" }}>
-                {l.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                <button onClick={() => { setLinks(links.filter((x) => x !== l)); mark(); }} aria-label={`Remove ${l}`} className="hover:opacity-70">✕</button>
+              <span key={l} className="font-data flex min-w-0 max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px]" style={{ background: "#EAF0FF", color: "#1E40D8" }}>
+                <span className="min-w-0 truncate">{l.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                <button onClick={() => { setLinks(links.filter((x) => x !== l)); mark(); }} aria-label={`Remove ${l}`} className="grid h-6 w-6 shrink-0 place-items-center hover:opacity-70">✕</button>
               </span>
             ))}
             <form onSubmit={(e) => { e.preventDefault(); const v = newLink.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, ""); if (v && !links.includes(v)) { setLinks([...links, v]); mark(); } setNewLink(""); }}
-              className="flex items-center gap-1">
+              className="flex min-w-0 items-center gap-1">
               <input value={newLink} onChange={(e) => setNewLink(e.target.value)} placeholder="+ add link" aria-label="Add link"
-                className="font-data w-28 rounded-full border px-2 py-0.5 text-[11px]" style={{ borderColor: "#E2E8F2" }} />
+                className="font-data w-24 min-w-0 rounded-full border px-2 py-1 text-[11px] sm:w-28" style={{ borderColor: "#E2E8F2" }} />
             </form>
-            <span className="ml-auto flex items-center gap-1.5 text-[12px]" style={{ color: "#3F4A63" }}><UserRound size={13} /> {user?.email ?? "local workspace"}</span>
-            {avgMatch !== null && <span className="font-data text-[12px] font-bold" style={{ color: "#1E40D8" }}>AVG {avgMatch}%</span>}
+            <span className="flex min-w-0 items-center gap-1.5 text-[12px]" style={{ color: "#3F4A63" }}><UserRound size={13} className="shrink-0" /> <span className="min-w-0 truncate">{user?.email ?? "local workspace"}</span></span>
+            {avgMatch !== null && <span className="font-data shrink-0 text-[12px] font-bold" style={{ color: "#1E40D8" }}>AVG {avgMatch}%</span>}
           </div>
         </div>
         <div className="grid w-full gap-1.5 sm:w-[190px]">
@@ -250,11 +250,11 @@ export default function ProfilePage() {
       </div>
 
       {dirty && (
-        <div className="rise sticky top-3 z-10 mt-3 flex items-center gap-3 rounded-[12px] border px-4 py-3" style={{ borderColor: "#2B5CFF", background: "#E4EBFF" }} role="status">
-          <Sparkles size={16} color="#1E40D8" />
-          <span className="text-[13px] font-semibold" style={{ color: "#1E40D8" }}>Unsaved changes</span>
-          <button onClick={resetAll} className="ml-auto text-[13px] font-bold" style={{ color: "#3F4A63" }}>Discard</button>
-          <button onClick={save} className="btn-primary px-4 py-2 text-[13px]">Save profile</button>
+        <div className="rise sticky top-16 z-10 mt-3 flex flex-wrap items-center gap-2 rounded-[12px] border px-4 py-3 sm:top-3 sm:gap-3" style={{ borderColor: "#2B5CFF", background: "#E4EBFF" }} role="status">
+          <Sparkles size={16} color="#1E40D8" className="shrink-0" />
+          <span className="min-w-0 flex-1 text-[13px] font-semibold" style={{ color: "#1E40D8" }}>Unsaved changes</span>
+          <button onClick={resetAll} className="min-h-[40px] shrink-0 px-2 text-[13px] font-bold" style={{ color: "#3F4A63" }}>Discard</button>
+          <button onClick={save} className="btn-primary min-h-[40px] shrink-0 px-4 py-2 text-[13px]">Save profile</button>
         </div>
       )}
 
@@ -316,22 +316,22 @@ export default function ProfilePage() {
             {skills.map((s) => {
               const lvl = levels[s] ?? "beginner";
               return (
-                <div key={s} className="grid gap-2 rounded-[12px] border p-3" style={{ borderColor: lvl === "advanced" ? "#0E9F6E" : lvl === "intermediate" ? "#2B5CFF" : "#E2E8F2", background: lvl === "beginner" ? "#fff" : lvl === "intermediate" ? "#F7F9FF" : "#F4FBF7" }}>
-                  <div className="flex items-center gap-2">
-                    <span className="font-data text-[13.5px] font-bold">{s}</span>
+                <div key={s} className="grid min-w-0 gap-2 rounded-[12px] border p-3" style={{ borderColor: lvl === "advanced" ? "#0E9F6E" : lvl === "intermediate" ? "#2B5CFF" : "#E2E8F2", background: lvl === "beginner" ? "#fff" : lvl === "intermediate" ? "#F7F9FF" : "#F4FBF7" }}>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="font-data min-w-0 flex-1 break-words text-[13.5px] font-bold">{s}</span>
                     <button onClick={() => { setSkills(skills.filter((x) => x !== s)); mark(); }}
-                      className="ml-auto rounded-md px-1.5 py-0.5 text-[12px] font-bold hover:bg-red-50" style={{ color: "#DC2626" }} aria-label={`Remove ${s}`}>✕</button>
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-[12px] font-bold hover:bg-red-50" style={{ color: "#DC2626" }} aria-label={`Remove ${s}`}>✕</button>
                   </div>
-                  <div className="grid grid-cols-3 gap-1 rounded-[10px] p-1" style={{ background: "#F0F3F9" }} role="radiogroup" aria-label={`${s} level`}>
+                  <div className="grid min-w-0 grid-cols-3 gap-1 rounded-[10px] p-1" style={{ background: "#F0F3F9" }} role="radiogroup" aria-label={`${s} level`}>
                     {LEVELS.map((l) => {
                       const on = lvl === l.id;
                       return (
                         <button key={l.id} role="radio" aria-checked={on}
                           onClick={() => { setLevels({ ...levels, [s]: l.id }); mark(); }}
-                          className="rounded-[8px] px-2 py-1.5 transition-all" title={l.hint}
+                          className="min-w-0 rounded-[8px] px-1 py-1.5 transition-all sm:px-2" title={l.hint}
                           style={on ? { background: "#0B1220", color: "#fff" } : { color: "#3F4A63" }}>
-                          <span className="block text-[11.5px] font-bold">{l.label}</span>
-                          <span className="block text-[10px] opacity-70">{l.hint}</span>
+                          <span className="block truncate text-[11.5px] font-bold">{l.label}</span>
+                          <span className="block truncate text-[10px] opacity-70">{l.hint}</span>
                         </button>
                       );
                     })}
@@ -345,10 +345,10 @@ export default function ProfilePage() {
           </div>
 
           <form onSubmit={(e) => { e.preventDefault(); const v = newSkill.trim().toLowerCase(); if (v && !skills.includes(v)) { setSkills([...skills, v]); setLevels({ ...levels, [v]: "beginner" }); setNewSkill(""); mark(); } }}
-            className="mt-3 flex gap-2">
+            className="mt-3 flex min-w-0 gap-2">
             <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="Add a skill you can demo…" aria-label="Add skill"
-              className="flex-1 rounded-[12px] border px-3.5 py-2.5 text-[13px]" style={{ borderColor: "#E2E8F2" }} />
-            <button className="flex items-center gap-1.5 rounded-[12px] border px-4 py-2.5 text-[13px] font-bold" style={{ borderColor: "#2B5CFF", color: "#1E40D8" }}><Plus size={14} /> Add</button>
+              className="min-w-0 flex-1 rounded-[12px] border px-3.5 py-2.5 text-[13px]" style={{ borderColor: "#E2E8F2" }} />
+            <button className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-[12px] border px-4 py-2.5 text-[13px] font-bold" style={{ borderColor: "#2B5CFF", color: "#1E40D8" }}><Plus size={14} /> Add</button>
           </form>
 
           <div className="mt-3 flex flex-wrap gap-1.5">

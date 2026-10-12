@@ -29,18 +29,19 @@ export function ScoreDial({ value, size = 132, label }: { value: number; size?: 
   }, [value]);
   const ang = Math.round((v / 100) * 360);
   const color = v >= 75 ? "#0E9F6E" : v >= 55 ? "#2B5CFF" : v >= 35 ? "#B45309" : "#DC2626";
+  const numeral = size <= 100 ? 24 : 30;
   return (
-    <div className="flex flex-col items-center gap-2" role="img" aria-label={`${label ?? "Score"} ${value} percent`}>
+    <div className="flex max-w-full flex-col items-center gap-2" role="img" aria-label={`${label ?? "Score"} ${value} percent`}>
       <div
-        className="dial-sweep grid place-items-center rounded-full"
+        className="dial-sweep grid max-w-full place-items-center rounded-full"
         style={{
-          width: size, height: size,
+          width: size, height: size, maxWidth: "100%",
           background: `conic-gradient(${color} ${ang}deg, #E8EDF6 0deg)`,
         }}
       >
         <div className="grid place-items-center rounded-full bg-white" style={{ width: size - 22, height: size - 22 }}>
           <div className="text-center">
-            <div className="font-data font-bold" style={{ fontSize: 30, color }}>{v}%</div>
+            <div className="font-data font-bold" style={{ fontSize: numeral, color }}>{v}%</div>
             {label && <div className="text-[11px] font-medium tracking-wide" style={{ color: "#3F4A63" }}>{label}</div>}
           </div>
         </div>
@@ -143,16 +144,16 @@ export function AppShell({ children, title, sub, requireAuth = false }: { childr
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[264px]">
-        <div className="nav-mobile flex items-center gap-2 overflow-x-auto border-b p-3" style={{ borderColor: "#E2E8F2", background: "#fff" }}>
-          <Link href="/" className="mr-1 flex items-center gap-1.5 text-[13px] font-bold"><Home size={15} /> ResumeAI</Link>
+        <div className="nav-mobile no-scrollbar sticky top-0 z-20 flex items-center gap-2 overflow-x-auto border-b px-3 py-2.5" style={{ borderColor: "#E2E8F2", background: "rgba(255,255,255,.96)", backdropFilter: "blur(10px)" }}>
+          <Link href="/" className="mr-1 flex shrink-0 items-center gap-1.5 text-[13px] font-bold"><Home size={15} /> ResumeAI</Link>
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium" style={{ borderColor: path === n.href ? "#2B5CFF" : "#E2E8F2", background: path === n.href ? "#2B5CFF" : "#fff", color: path === n.href ? "#fff" : "#0E1525" }}>{n.label}</Link>
+            <Link key={n.href} href={n.href} className="inline-flex min-h-[36px] shrink-0 items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium" style={{ borderColor: path === n.href ? "#2B5CFF" : "#E2E8F2", background: path === n.href ? "#2B5CFF" : "#fff", color: path === n.href ? "#fff" : "#0E1525" }}>{n.label}</Link>
           ))}
         </div>
-        <main key={path} className="page-enter mx-auto w-full max-w-[1120px] flex-1 px-4 py-8 sm:px-6">
-          <header className="mb-6">
-            <h1 className="font-display text-[28px] font-bold tracking-[-0.02em]">{title}</h1>
-            {sub && <p className="mt-1 max-w-[70ch] text-[14px] leading-6" style={{ color: "#3F4A63" }}>{sub}</p>}
+        <main key={path} className="page-enter mx-auto w-full max-w-[1120px] min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-8">
+          <header className="mb-5 sm:mb-6">
+            <h1 className="font-display text-[24px] font-bold leading-tight tracking-[-0.02em] break-words sm:text-[28px]">{title}</h1>
+            {sub && <p className="mt-1 max-w-[70ch] text-[13.5px] leading-6 sm:text-[14px]" style={{ color: "#3F4A63" }}>{sub}</p>}
           </header>
           {body}
         </main>
@@ -181,9 +182,9 @@ export function AppShell({ children, title, sub, requireAuth = false }: { childr
 
 export function Empty({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
   return (
-    <div className="card grid gap-2 p-8 text-center">
-      <div className="font-display text-[18px] font-bold">{title}</div>
-      <p className="mx-auto max-w-[52ch] text-[14px]" style={{ color: "#3F4A63" }}>{body}</p>
+    <div className="card grid gap-2 p-5 text-center sm:p-8">
+      <div className="font-display text-[17px] font-bold leading-snug sm:text-[18px]">{title}</div>
+      <p className="mx-auto max-w-[52ch] text-[13.5px] sm:text-[14px]" style={{ color: "#3F4A63" }}>{body}</p>
       {action && <div className="mt-3 flex justify-center">{action}</div>}
     </div>
   );

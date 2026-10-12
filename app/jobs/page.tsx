@@ -131,27 +131,27 @@ export default function JobsPage() {
 
   return (
     <AppShell requireAuth title="Jobs & match" sub="Decision-support scores. Same profile, up to 3 JDs — strengths, gaps, and what learning each gap unlocks.">
-      <div className="card grid gap-3 p-5">
+      <div className="card grid min-w-0 gap-3 p-4 sm:p-5">
         {forms.map((f, i) => (
-          <div key={i} className="grid gap-2 rounded-[12px] border p-3.5" style={{ borderColor: "#E2E8F2" }}>
+          <div key={i} className="grid min-w-0 gap-2 rounded-[12px] border p-3 sm:p-3.5" style={{ borderColor: "#E2E8F2" }}>
             <div className="grid gap-2 sm:grid-cols-2">
-              <input value={f.title} onChange={(e) => setForms(forms.map((x, k) => k === i ? { ...x, title: e.target.value } : x))} placeholder="Role title (e.g. Frontend Intern)" className="rounded-[10px] border px-3 py-2.5 text-[13px]" style={{ borderColor: "#E2E8F2" }} />
-              <input value={f.company} onChange={(e) => setForms(forms.map((x, k) => k === i ? { ...x, company: e.target.value } : x))} placeholder="Company" className="rounded-[10px] border px-3 py-2.5 text-[13px]" style={{ borderColor: "#E2E8F2" }} />
+              <input value={f.title} onChange={(e) => setForms(forms.map((x, k) => k === i ? { ...x, title: e.target.value } : x))} placeholder="Role title (e.g. Frontend Intern)" className="min-w-0 rounded-[10px] border px-3 py-2.5 text-[13px]" style={{ borderColor: "#E2E8F2" }} />
+              <input value={f.company} onChange={(e) => setForms(forms.map((x, k) => k === i ? { ...x, company: e.target.value } : x))} placeholder="Company" className="min-w-0 rounded-[10px] border px-3 py-2.5 text-[13px]" style={{ borderColor: "#E2E8F2" }} />
             </div>
-            <textarea value={f.jd} onChange={(e) => setForms(forms.map((x, k) => k === i ? { ...x, jd: e.target.value } : x))} rows={3} placeholder="Paste job description…" className="rounded-[10px] border px-3 py-2.5 font-mono text-[12px]" style={{ borderColor: "#E2E8F2" }} />
+            <textarea value={f.jd} onChange={(e) => setForms(forms.map((x, k) => k === i ? { ...x, jd: e.target.value } : x))} rows={3} placeholder="Paste job description…" className="min-w-0 rounded-[10px] border px-3 py-2.5 font-mono text-[12px]" style={{ borderColor: "#E2E8F2" }} />
           </div>
         ))}
-        <div className="flex flex-wrap gap-2">
-          {forms.length < 3 && <button onClick={() => setForms([...forms, { title: "", company: "", jd: "" }])} className="flex items-center gap-1.5 rounded-[12px] border px-4 py-2.5 text-[13px] font-semibold" style={{ borderColor: "#E2E8F2", background: "#fff" }}><Plus size={15} /> Add JD ({forms.length}/3)</button>}
-          <button onClick={() => runMatch()} disabled={busy} className="btn-primary flex items-center gap-2 px-5 py-2.5 text-[13px]">{busy ? <Loader2 size={15} className="animate-spin" /> : null} {busy ? "Matching…" : "Compare jobs"}</button>
-          <button onClick={() => { setForms(SAMPLE_JDS); setTimeout(() => runMatch(SAMPLE_JDS), 50); }} className="rounded-[12px] border px-4 py-2.5 text-[13px] font-semibold" style={{ borderColor: "#E2E8F2", background: "#fff" }}>Try 3 samples</button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {forms.length < 3 && <button onClick={() => setForms([...forms, { title: "", company: "", jd: "" }])} className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-[12px] border px-4 py-2.5 text-[13px] font-semibold" style={{ borderColor: "#E2E8F2", background: "#fff" }}><Plus size={15} /> Add JD ({forms.length}/3)</button>}
+          <button onClick={() => runMatch()} disabled={busy} className="btn-primary flex min-h-[44px] items-center justify-center gap-2 px-5 py-2.5 text-[13px]">{busy ? <Loader2 size={15} className="animate-spin" /> : null} {busy ? "Matching…" : "Compare jobs"}</button>
+          <button onClick={() => { setForms(SAMPLE_JDS); setTimeout(() => runMatch(SAMPLE_JDS), 50); }} className="min-h-[44px] rounded-[12px] border px-4 py-2.5 text-[13px] font-semibold" style={{ borderColor: "#E2E8F2", background: "#fff" }}>Try 3 samples</button>
         </div>
         {err && <div className="rounded-[10px] px-3 py-2 text-[13px] font-medium" style={{ background: "#FDE8E8", color: "#B42323" }}>{err}</div>}
         {strategy && <div className="rounded-[10px] px-3.5 py-2.5 text-[13px]" style={{ background: "#E4EBFF", color: "#1E40D8" }}>{strategy}</div>}
       </div>
 
-      <div className="card mt-3 p-5">
-        <div ref={liveTopRef} className="flex scroll-mt-6 flex-wrap items-center gap-2">
+      <div className="card mt-3 min-w-0 p-4 sm:p-5">
+        <div ref={liveTopRef} className="flex min-w-0 scroll-mt-24 flex-wrap items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-[10px]" style={{ background: "#E4EBFF", color: "#1E40D8" }}><Globe size={18} /></span>
           <div>
             <div className="font-display text-[16px] font-bold">Live jobs for your skills</div>
@@ -234,17 +234,17 @@ export default function JobsPage() {
         )}
       </div>
 
-      <div ref={resultsRef} className="scroll-mt-6" />
+      <div ref={resultsRef} className="scroll-mt-24" />
       {busy && <MatchCardsSkeleton />}
 
       {jobs.length > 0 && !busy && (
         <>
           <Reveal className="mt-3 grid gap-3 lg:grid-cols-3">
             {jobs.map((m) => (
-              <div key={m.id} className="card card-elev grid gap-3 p-5 rise" style={best?.id === m.id ? { outline: "2px solid #2B5CFF" } : undefined}>
-                <div className="flex items-start justify-between gap-3">
-                  <div><div className="font-display text-[16px] font-bold">{m.title || "Target role"}</div><div className="text-[12.5px]" style={{ color: "#3F4A63" }}>{m.company || "Company"}{best?.id === m.id ? " · BEST FIT" : ""}</div></div>
-                  <ScoreDial value={whatIf.length ? lifted(m) : m.matchScore} size={96} />
+              <div key={m.id} className="card card-elev rise grid min-w-0 gap-3 p-4 sm:p-5" style={best?.id === m.id ? { outline: "2px solid #2B5CFF" } : undefined}>
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1"><div className="font-display break-words text-[16px] font-bold">{m.title || "Target role"}</div><div className="break-words text-[12.5px]" style={{ color: "#3F4A63" }}>{m.company || "Company"}{best?.id === m.id ? " · BEST FIT" : ""}</div></div>
+                  <div className="shrink-0"><ScoreDial value={whatIf.length ? lifted(m) : m.matchScore} size={96} /></div>
                 </div>
                 {m.dbId && (
                   <a href={`/jobs/${m.dbId}`} className="font-data text-[11px] font-bold tracking-wide" style={{ color: "#1E40D8" }}>OPEN SAVED RESULT ↗ /jobs/{m.dbId.slice(0, 8)}</a>
@@ -265,46 +265,48 @@ export default function JobsPage() {
             ))}
           </Reveal>
 
-          <div className="card mt-3 flex flex-wrap items-center gap-3 border p-5" style={{ background: "#EAF0FF", borderColor: "#C9D6FF" }}>
-            <FlaskConical size={20} color="#1E40D8" />
-            <div className="text-[13.5px]" style={{ color: "#0E1525" }}>
+          <div className="card mt-3 flex flex-col gap-3 border p-4 sm:flex-row sm:flex-wrap sm:items-center sm:p-5" style={{ background: "#EAF0FF", borderColor: "#C9D6FF" }}>
+            <div className="flex min-w-0 items-start gap-2">
+            <FlaskConical size={20} color="#1E40D8" className="mt-0.5 shrink-0" />
+            <div className="min-w-0 text-[13.5px]" style={{ color: "#0E1525" }}>
               <b>What-if simulator (simulated, not a hiring promise):</b> tick gaps above.
               {whatIf.length > 0 ? <> Learning <b>{whatIf.join(", ")}</b> lifts best match to <span className="font-data font-bold" style={{ color: "#1E40D8" }}>{best ? lifted(best) : 0}%</span> (was {best?.matchScore}%).</> : " Tick a missing skill on any card to preview the lift."}
             </div>
-            <a href="/roadmap" className="btn-primary ml-auto flex items-center gap-1.5 px-4 py-2.5 text-[13px]">Build roadmap <ArrowRight size={14} /></a>
+            </div>
+            <a href="/roadmap" className="btn-primary flex min-h-[44px] items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] sm:ml-auto">Build roadmap <ArrowRight size={14} /></a>
           </div>
 
           <Reveal delay={100} className="mt-3 grid gap-3 lg:grid-cols-2">
-            <div className="card p-5">
+            <div className="card min-w-0 p-4 sm:p-5">
               <div className="font-display text-[16px] font-bold">Recommended roles for you</div>
-              <div className="mt-2.5 grid gap-2">{recs.map((r) => <div key={r.role} className="text-[13px]" style={{ color: "#3F4A63" }}><b style={{ color: "#0E1525" }}>{r.role}</b> — {r.why} {r.lift}</div>)}</div>
+              <div className="mt-2.5 grid gap-2">{recs.map((r) => <div key={r.role} className="text-[13px] break-words" style={{ color: "#3F4A63" }}><b style={{ color: "#0E1525" }}>{r.role}</b> — {r.why} {r.lift}</div>)}</div>
             </div>
-            <div className="card p-5">
-              <div className="flex items-center justify-between"><div className="font-display text-[16px] font-bold">Resume wording fixes</div><button onClick={loadImprove} disabled={improving} className="flex items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[12px] font-bold disabled:opacity-60" style={{ borderColor: "#E2E8F2" }}>{improving ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />} {improving ? "Writing…" : "Generate"}</button></div>
+            <div className="card min-w-0 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2"><div className="font-display text-[16px] font-bold">Resume wording fixes</div><button onClick={loadImprove} disabled={improving} className="flex min-h-[40px] items-center gap-1.5 rounded-[10px] border px-3 py-2 text-[12px] font-bold disabled:opacity-60" style={{ borderColor: "#E2E8F2" }}>{improving ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />} {improving ? "Writing…" : "Generate"}</button></div>
               {!improve && !improving && <div className="mt-2 text-[13px]" style={{ color: "#3F4A63" }}>Grounded rewrites only — no invented experience, ever.</div>}
               {improving && <div className="mt-2.5 grid gap-2" aria-hidden><Skeleton style={{ height: 58 }} /><Skeleton style={{ height: 58 }} /><Skeleton style={{ height: 58 }} /></div>}
-              {improve && <div className="mt-2.5 grid gap-2">{improve.suggestions.map((s, i) => <div key={i} className="rounded-[10px] border px-3 py-2 text-[12.5px]" style={{ borderColor: "#E2E8F2" }}><b>{s.section}:</b> <span style={{ color: "#3F4A63" }}>{s.before}</span><br />→ <b>{s.after}</b><br /><span className="italic" style={{ color: "#3F4A63" }}>{s.reason}</span></div>)}{improve.aiRewrite && <div className="rounded-[10px] p-3 text-[12.5px] whitespace-pre-wrap" style={{ background: "#F2F5FF" }}>{improve.aiRewrite}</div>}</div>}
+              {improve && <div className="mt-2.5 grid gap-2">{improve.suggestions.map((s, i) => <div key={i} className="min-w-0 break-words rounded-[10px] border px-3 py-2 text-[12.5px]" style={{ borderColor: "#E2E8F2" }}><b>{s.section}:</b> <span style={{ color: "#3F4A63" }}>{s.before}</span><br />→ <b>{s.after}</b><br /><span className="italic" style={{ color: "#3F4A63" }}>{s.reason}</span></div>)}{improve.aiRewrite && <div className="rounded-[10px] p-3 text-[12.5px] whitespace-pre-wrap break-words" style={{ background: "#F2F5FF" }}>{improve.aiRewrite}</div>}</div>}
             </div>
           </Reveal>
         </>
       )}
       {jobs.length === 0 && !busy && (
         history.length > 0 ? (
-          <div className="card mt-3 p-5">
+          <div className="card mt-3 min-w-0 p-4 sm:p-5">
             <div className="font-display text-[16px] font-bold">Recent saved matches</div>
             <div className="mt-2.5 grid gap-2">
               {history.map((h) => (
-                <a key={h.id} href={`/jobs/${h.id}`} className="flex items-center gap-3 rounded-[10px] border px-3.5 py-2.5 hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
-                  <span className="font-data text-[15px] font-bold" style={{ color: "#1E40D8" }}>{h.result?.matchScore ?? "—"}%</span>
+                <a key={h.id} href={`/jobs/${h.id}`} className="flex min-w-0 items-center gap-3 rounded-[10px] border px-3.5 py-2.5 hover:border-[#2B5CFF]" style={{ borderColor: "#E2E8F2" }}>
+                  <span className="font-data shrink-0 text-[15px] font-bold" style={{ color: "#1E40D8" }}>{h.result?.matchScore ?? "—"}%</span>
                   <span className="min-w-0 flex-1"><b className="block truncate text-[13.5px]">{h.title}</b><span className="block truncate text-[12px]" style={{ color: "#3F4A63" }}>{h.company} · {new Date(h.created_at).toLocaleDateString()}</span></span>
-                  <ArrowRight size={14} color="#2B5CFF" />
+                  <ArrowRight size={14} color="#2B5CFF" className="shrink-0" />
                 </a>
               ))}
             </div>
             <div className="mt-3 text-[13px]" style={{ color: "#3F4A63" }}>…or paste a JD above. Match = (have + 0.5×partial) / JD skills.</div>
           </div>
         ) : (
-          <div className="card mt-3 p-5"><Meter value={0} /><div className="mt-2 text-[13px]" style={{ color: "#3F4A63" }}>No comparisons yet — paste a JD above. Match = (have + 0.5×partial) / JD skills.</div></div>
+          <div className="card mt-3 min-w-0 p-4 sm:p-5"><Meter value={0} /><div className="mt-2 text-[13px]" style={{ color: "#3F4A63" }}>No comparisons yet — paste a JD above. Match = (have + 0.5×partial) / JD skills.</div></div>
         )
       )}
       {cachedNote && jobs.length > 0 && !busy && (

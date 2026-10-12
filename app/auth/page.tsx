@@ -105,8 +105,8 @@ function AuthForm() {
       </div>
 
       {/* Form panel */}
-      <div className="grid place-items-center p-6">
-        <form onSubmit={go} className="card card-elev grid w-full max-w-[420px] gap-3.5 p-7">
+      <div className="grid min-w-0 place-items-center p-4 sm:p-6">
+        <form onSubmit={go} className="card card-elev grid w-full max-w-[420px] min-w-0 gap-3.5 p-5 sm:p-7">
           <div className="font-data text-[10px] font-bold tracking-[.14em]" style={{ color: "#3F4A63" }}>{mode === "up" ? "CREATE YOUR WORKSPACE" : "WELCOME BACK"}</div>
           <div className="font-display text-[24px] font-bold">{mode === "up" ? "Sign up" : "Sign in"}</div>
 

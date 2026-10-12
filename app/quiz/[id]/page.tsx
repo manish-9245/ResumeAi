@@ -20,12 +20,12 @@ export default async function QuizAttempt({ params }: { params: Promise<{ id: st
 
   return (
     <AppShell requireAuth title={`Quiz review — ${score}/${questions.length}`} sub={`Taken ${new Date(row.created_at as string).toLocaleString()} · topics: ${topics.join(", ") || "—"}`}>
-      <div className="card p-5" style={{ background: pass ? "#E6F7EE" : "#FFF4D6", borderColor: pass ? "#0E9F6E" : "#B45309" }}>
-        <div className="font-display text-[20px] font-bold">{score}/{questions.length} verified {pass ? "— claims held up." : "— re-learn the misses."}</div>
+      <div className="card min-w-0 p-4 sm:p-5" style={{ background: pass ? "#E6F7EE" : "#FFF4D6", borderColor: pass ? "#0E9F6E" : "#B45309" }}>
+        <div className="font-display text-[18px] font-bold leading-snug sm:text-[20px]">{score}/{questions.length} verified {pass ? "— claims held up." : "— re-learn the misses."}</div>
       </div>
       <div className="mt-3 grid gap-2.5">
         {questions.map((item, i) => (
-          <div key={item.id} className="card p-5">
+          <div key={item.id} className="card min-w-0 p-4 sm:p-5">
             <div className="flex items-center gap-2 text-[12px] font-bold" style={{ color: "#3F4A63" }}><span className="font-data">Q{i + 1}</span> <Chip tone="info">{item.skill}</Chip></div>
             <div className="font-display mt-1.5 text-[15.5px] font-bold">{item.question}</div>
             <div className="mt-2.5 grid gap-1.5">
