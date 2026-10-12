@@ -10,13 +10,28 @@ function AuthForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/dashboard";
-  const { user, loading, signUp, signIn } = useAuth();
+  const { user, loading, signUp, signIn, resendConfirmation } = useAuth();
   const [mode, setMode] = React.useState<"up" | "in">("up");
   const [email, setEmail] = React.useState("");
   const [pass, setPass] = React.useState("");
   const [show, setShow] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
-  const [msg, setMsg] = React.useState<{ kind: "error" | "ok"; text: string } | null>(null);
+  const [msg, setMsg] = React.useState<{ kind: "error" | "ok"; text: string; showResend?: boolean } | null>(null);
+  const [cool, setCool] = React.useState(0);
+
+  React.useEffect(() => {
+    if (cool <= 0) return;
+    const t = setTimeout(() => setCool((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cool]);
+
+  async function resend() {
+    if (cool > 0 || !email) return;
+    setCool(60);
+    const r = await resendConfirmation(email.trim());
+    if (r.error) setMsg({ kind: "error", text: friendlyError(r.error), showResend: true });
+    else setMsg({ kind: "ok", text: "Confirmation email sent — check your inbox and spam folder." });
+  }
 
   React.useEffect(() => {
     if (!loading && user) router.replace(next);
@@ -69,7 +84,7 @@ function AuthForm() {
             One account = one isolated workspace. Resumes, matches, roadmaps and quizzes are fenced per account — nobody else can read them.
           </p>
           <div className="grid gap-2.5">
-            {["Private by default — RLS on every table", "Scores are guidance, never hiring verdicts", "Delete anytime — Reset data wipes your slice"].map((t) => (
+            {["Private by default — only you can read your data", "Scores are guidance, never hiring verdicts", "Delete anytime — Reset data wipes your slice"].map((t) => (
               <div key={t} className="flex items-center gap-2.5 text-[13.5px]" style={{ color: "#3F4A63" }}><CheckCircle2 size={16} color="#0E9F6E" /> {t}</div>
             ))}
           </div>

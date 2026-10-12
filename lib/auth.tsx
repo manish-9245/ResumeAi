@@ -12,6 +12,7 @@ interface AuthState {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: string | null; needsConfirm: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  resendConfirmation: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -88,6 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (sb) await (sb as unknown as { auth: { signOut: () => Promise<unknown> } }).auth.signOut();
       } catch {}
       setUser(null);
+    },
+    resendConfirmation: async (email) => {
+      try {
+        const sb = createClient();
+        if (!sb) return { error: "Supabase is not configured." };
+        const client = sb as unknown as {
+          auth: { resend: (v: { type: string; email: string }) => Promise<{ error: { message: string } | null }> };
+        };
+        const { error } = await client.auth.resend({ type: "signup", email });
+        return { error: error ? error.message : null };
+      } catch {
+        return { error: "Resend failed. Try again in a minute." };
+      }
     },
   }), [user, loading]);
 

@@ -7,7 +7,7 @@ import { AppShell, Empty, Chip, Meter } from "@/components/shell";
 import type { ParsedProfile, SkillLevel } from "@/lib/types";
 import {
   GraduationCap, Briefcase, Rocket, Award, Mail, UserRound, Phone,
-  Plus, Check, ShieldCheck, Pencil, ArrowRight, Sparkles, Trash2, Link2,
+  Plus, Check, ShieldCheck, Pencil, ArrowRight, Sparkles, Trash2, Link2, RefreshCw, CloudOff,
 } from "lucide-react";
 
 const LEVELS: { id: SkillLevel; label: string; hint: string }[] = [
@@ -109,6 +109,24 @@ export default function ProfilePage() {
   const [newSkill, setNewSkill] = React.useState("");
   const [saved, setSaved] = React.useState("");
   const [dirty, setDirty] = React.useState(false);
+  const [sync, setSync] = React.useState<null | {
+    tables: Record<string, { ok: boolean; detail?: string; count?: number }>;
+    missing: string[];
+  }>(null);
+  const [checking, setChecking] = React.useState(false);
+
+  async function checkSync() {
+    setChecking(true);
+    try {
+      const r = await fetch("/api/sync-status");
+      const j = await r.json();
+      if (j.signedIn) setSync({ tables: j.tables ?? {}, missing: j.missing ?? [] });
+      else setSync(null);
+    } catch { /* offline — card stays hidden */ }
+    finally { setChecking(false); }
+  }
+
+  React.useEffect(() => { checkSync(); }, []);
 
   const resetAll = React.useCallback(() => {
     if (!profile) return;
@@ -214,6 +232,29 @@ export default function ProfilePage() {
           <span className="text-[13px] font-semibold" style={{ color: "#1E40D8" }}>Unsaved changes</span>
           <button onClick={resetAll} className="ml-auto text-[13px] font-bold" style={{ color: "#3F4A63" }}>Discard</button>
           <button onClick={save} className="btn-primary px-4 py-2 text-[13px]">Save profile</button>
+        </div>
+      )}
+
+      {sync && sync.missing.length > 0 && (
+        <div className="card mt-3 border p-5" style={{ borderColor: "#DC2626", background: "#FFF5F5" }} role="alert">
+          <div className="flex items-center gap-2 font-display text-[15.5px] font-bold" style={{ color: "#B42323" }}>
+            <CloudOff size={17} /> Cloud sync is off — your data stays on this device only
+          </div>
+          <p className="mt-1.5 max-w-[70ch] text-[13px] leading-6" style={{ color: "#3F4A63" }}>
+            {sync.missing.length === 7
+              ? "None of the app tables exist in your Supabase project yet. Run supabase/schema.sql in your Supabase dashboard (SQL editor), then tap Recheck."
+              : `These tables are unreachable: ${sync.missing.join(", ")}. ${sync.missing.some((m) => /relation .* does not exist|Could not find/i.test(sync.tables[m]?.detail ?? "")) ? "Re-run supabase/schema.sql in your Supabase dashboard (SQL editor), then tap Recheck." : "Check RLS policies and table permissions, then tap Recheck."}`}
+          </p>
+          <button onClick={checkSync} disabled={checking} className="btn-primary mt-3 flex items-center gap-1.5 px-4 py-2.5 text-[13px] disabled:opacity-60">
+            <RefreshCw size={14} className={checking ? "animate-spin" : ""} /> {checking ? "Checking…" : "Recheck sync"}
+          </button>
+        </div>
+      )}
+
+      {sync && sync.missing.length === 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[12px] border px-4 py-2.5 text-[12.5px] font-medium" style={{ borderColor: "#0E9F6E", background: "#E6F7EE", color: "#0B7A55" }}>
+          <Check size={14} /> Cloud sync on — profile{(sync.tables.profiles?.count ?? 0) > 0 ? "" : " (not saved yet)"}, {sync.tables.chat_sessions?.count ?? 0} chats, {sync.tables.job_matches?.count ?? 0} matches stored. Same account, any device.
+          <button onClick={checkSync} disabled={checking} className="ml-auto font-bold underline underline-offset-2">Recheck</button>
         </div>
       )}
 
