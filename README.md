@@ -169,7 +169,6 @@ Notes:
 - `analyses` dedupes by `unique(user_id, resume_hash)` — identical resume re-uploads cost 0 tokens.
 - `ai_cache` is keyed by `(user_id, key)` — match strategy + wording rewrites.
 - `roadmaps.job_match_id` and `job_matches.profile_id` are nullable optionals, not required parents.
-```
 
 ## Engineering that keeps it at $0/mo
 
