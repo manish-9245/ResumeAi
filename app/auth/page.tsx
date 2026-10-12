@@ -37,7 +37,19 @@ function AuthForm() {
     if (!loading && user) router.replace(next);
   }, [loading, user, router, next]);
 
+  React.useEffect(() => {
+    if (params.get("error") === "confirm") {
+      setMsg({ kind: "error", text: "That confirmation link expired or was already used — sign in directly, or resend a fresh link below.", showResend: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const strength = pass.length === 0 ? 0 : pass.length < 6 ? 1 : pass.length < 10 ? 2 : 3;
+
+  function needsResend(raw: string): boolean {
+    const l = raw.toLowerCase();
+    return l.includes("confirm") || l.includes("rate limit") || l.includes("expired") || l.includes("already");
+  }
 
   async function go(e?: React.FormEvent) {
     e?.preventDefault();
@@ -46,12 +58,12 @@ function AuthForm() {
     try {
       if (mode === "up") {
         const r = await signUp(email.trim(), pass);
-        if (r.error) setMsg({ kind: "error", text: friendlyError(r.error) });
-        else if (r.needsConfirm) setMsg({ kind: "ok", text: "Account created — check your inbox to confirm, then sign in." });
+        if (r.error) setMsg({ kind: "error", text: friendlyError(r.error), showResend: needsResend(r.error) });
+        else if (r.needsConfirm) setMsg({ kind: "ok", text: "Account created — check your inbox to confirm, then sign in.", showResend: true });
         else router.replace(next);
       } else {
         const r = await signIn(email.trim(), pass);
-        if (r.error) setMsg({ kind: "error", text: friendlyError(r.error) });
+        if (r.error) setMsg({ kind: "error", text: friendlyError(r.error), showResend: needsResend(r.error) });
         else router.replace(next);
       }
     } finally { setBusy(false); }
@@ -140,6 +152,12 @@ function AuthForm() {
             <div className="rounded-[10px] px-3.5 py-2.5 text-[13px] font-medium" role="alert"
               style={msg.kind === "error" ? { background: "#FDE8E8", color: "#B42323" } : { background: "#E6F7EE", color: "#0B7A55" }}>
               {msg.text}
+              {msg.showResend && (
+                <button type="button" onClick={resend} disabled={cool > 0 || !email}
+                  className="mt-2 block font-bold underline underline-offset-2 disabled:opacity-50">
+                  {cool > 0 ? `Resend available in ${cool}s` : "Resend confirmation email"}
+                </button>
+              )}
             </div>
           )}
 
@@ -156,6 +174,7 @@ function AuthForm() {
 
 function friendlyError(raw: string): string {
   const l = raw.toLowerCase();
+  if (l.includes("rate limit") || l.includes("too many")) return "Too many emails just now — wait a minute, then resend below. (Free-tier email limits reset quickly.)";
   if (l.includes("invalid login") || l.includes("invalid credentials")) return "Wrong email or password — try again or create an account.";
   if (l.includes("already registered") || l.includes("already exists")) return "That email already has an account — hit Sign in instead.";
   if (l.includes("confirm")) return "Please confirm your email first (check inbox/spam), then sign in.";

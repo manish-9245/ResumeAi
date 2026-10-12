@@ -61,9 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const sb = createClient();
         if (!sb) return { error: "Supabase is not configured.", needsConfirm: false };
         const client = sb as unknown as {
-          auth: { signUp: (v: { email: string; password: string }) => Promise<{ data: { session: unknown }; error: { message: string } | null }> };
+          auth: { signUp: (v: { email: string; password: string; options?: { emailRedirectTo?: string } }) => Promise<{ data: { session: unknown }; error: { message: string } | null }> };
         };
-        const { data, error } = await client.auth.signUp({ email, password });
+        // Confirmation links land on /auth/callback (code exchange), then ?next.
+        const emailRedirectTo = typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback?next=/dashboard`
+          : undefined;
+        const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo } });
         if (error) return { error: error.message, needsConfirm: false };
         return { error: null, needsConfirm: !data.session };
       } catch {
@@ -95,9 +99,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const sb = createClient();
         if (!sb) return { error: "Supabase is not configured." };
         const client = sb as unknown as {
-          auth: { resend: (v: { type: string; email: string }) => Promise<{ error: { message: string } | null }> };
+          auth: { resend: (v: { type: string; email: string; options?: { emailRedirectTo?: string } }) => Promise<{ error: { message: string } | null }> };
         };
-        const { error } = await client.auth.resend({ type: "signup", email });
+        const emailRedirectTo = typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback?next=/dashboard`
+          : undefined;
+        const { error } = await client.auth.resend({ type: "signup", email, options: { emailRedirectTo } });
         return { error: error ? error.message : null };
       } catch {
         return { error: "Resend failed. Try again in a minute." };

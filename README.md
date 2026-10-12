@@ -124,6 +124,14 @@ npm run dev                  # http://localhost:3000
 
 Then run `supabase/schema.sql` in your Supabase SQL editor (tables + RLS + indexes) and enable the Email auth provider.
 
+### Auth redirects (production)
+
+Confirmation emails must land back on your domain, or users verify into the void:
+
+1. **Supabase dashboard → Authentication → URL Configuration**: set **Site URL** to `https://resume-ai-five-weld.vercel.app` and add it to **Redirect URLs** as `https://resume-ai-five-weld.vercel.app/**` (keep `http://localhost:3000/**` for local dev).
+2. **Vercel → Project → Settings → Environment Variables**: set `NEXT_PUBLIC_SITE_URL=https://resume-ai-five-weld.vercel.app` (canonical tags, OG image, sitemap and robots read it; the app falls back to Vercel's auto domain if unset).
+3. The app handles the rest: sign-up links point at `/auth/callback`, which exchanges the code for a session and lands the user on `/dashboard`. Expired links bounce to `/auth?error=confirm` with a resend button.
+
 ## Project structure
 
 ```
