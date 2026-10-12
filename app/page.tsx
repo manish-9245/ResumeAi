@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, FileUp, Crosshair, Map, BadgeCheck, MessagesS
 import { PwaInstallButton } from "@/components/pwa";
 import { MobileMenu } from "@/components/mobile-nav";
 import { HeroEnter, ScaleFade, PinSplit, Marquee } from "@/components/landing-motion";
+import { HeroVideo } from "@/components/hero-video";
 import { ScoreDial, Chip } from "@/components/shell";
 
 const outfit = Outfit({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
@@ -103,12 +104,7 @@ export default function Landing() {
           <div className="grid w-full max-w-4xl justify-items-center gap-3">
             <div className="font-data text-[10px] font-bold tracking-[.14em]" style={{ color: "#3F4A63" }}>WATCH THE TOUR · 0:24</div>
             <div className="card w-full overflow-hidden shadow-xl" style={{ background: "#0E1525" }}>
-              <video
-                controls preload="metadata" playsInline
-                aria-label="ResumeAI product tour video (24 seconds)"
-                className="aspect-video w-full bg-[#0E1525]"
-                src="/brag.mp4"
-              />
+              <HeroVideo />
             </div>
           </div>
           <ScaleFade className="w-full max-w-4xl">
