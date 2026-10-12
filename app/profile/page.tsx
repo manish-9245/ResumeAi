@@ -114,19 +114,30 @@ export default function ProfilePage() {
     missing: string[];
   }>(null);
   const [checking, setChecking] = React.useState(false);
+  const [showOk, setShowOk] = React.useState(false);
 
-  async function checkSync() {
+  async function checkSync(announce = false) {
     setChecking(true);
     try {
       const r = await fetch("/api/sync-status");
       const j = await r.json();
-      if (j.signedIn) setSync({ tables: j.tables ?? {}, missing: j.missing ?? [] });
+      if (j.signedIn) {
+        const missing: string[] = j.missing ?? [];
+        setSync({ tables: j.tables ?? {}, missing });
+        // Green confirmation is transient and only on explicit recheck.
+        if (missing.length === 0 && announce) {
+          setShowOk(true);
+          setTimeout(() => setShowOk(false), 8000);
+        } else if (missing.length > 0) {
+          setShowOk(false);
+        }
+      }
       else setSync(null);
     } catch { /* offline — card stays hidden */ }
     finally { setChecking(false); }
   }
 
-  React.useEffect(() => { checkSync(); }, []);
+  React.useEffect(() => { checkSync(false); }, []);
 
   const resetAll = React.useCallback(() => {
     if (!profile) return;
@@ -257,17 +268,18 @@ export default function ProfilePage() {
               ? "None of the app tables exist in your Supabase project yet. Run supabase/schema.sql in your Supabase dashboard (SQL editor), then tap Recheck."
               : `These tables are unreachable: ${sync.missing.join(", ")}. ${sync.missing.some((m) => /relation .* does not exist|Could not find/i.test(sync.tables[m]?.detail ?? "")) ? "Re-run supabase/schema.sql in your Supabase dashboard (SQL editor), then tap Recheck." : "Check RLS policies and table permissions, then tap Recheck."}`}
           </p>
-          <button onClick={checkSync} disabled={checking} className="btn-primary mt-3 flex items-center gap-1.5 px-4 py-2.5 text-[13px] disabled:opacity-60">
+          <button onClick={() => checkSync(true)} disabled={checking} className="btn-primary mt-3 flex items-center gap-1.5 px-4 py-2.5 text-[13px] disabled:opacity-60">
             <RefreshCw size={14} className={checking ? "animate-spin" : ""} /> {checking ? "Checking…" : "Recheck sync"}
           </button>
         </div>
       )}
 
-      {sync && sync.missing.length === 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[12px] border px-4 py-2.5 text-[12.5px] font-medium" style={{ borderColor: "#0E9F6E", background: "#E6F7EE", color: "#0B7A55" }}>
+      {sync && sync.missing.length === 0 && showOk && (
+        <button onClick={() => setShowOk(false)} title="Dismiss"
+          className="mt-3 flex w-full flex-wrap items-center gap-2 rounded-[12px] border px-4 py-2.5 text-left text-[12.5px] font-medium" style={{ borderColor: "#0E9F6E", background: "#E6F7EE", color: "#0B7A55" }}>
           <Check size={14} /> Cloud sync on — profile{(sync.tables.profiles?.count ?? 0) > 0 ? "" : " (not saved yet)"}, {sync.tables.chat_sessions?.count ?? 0} chats, {sync.tables.job_matches?.count ?? 0} matches stored. Same account, any device.
-          <button onClick={checkSync} disabled={checking} className="ml-auto font-bold underline underline-offset-2">Recheck</button>
-        </div>
+          <span className="ml-auto font-bold">✕</span>
+        </button>
       )}
 
       <div className="mt-3 grid items-start gap-3 lg:grid-cols-[1fr_1.1fr]">
