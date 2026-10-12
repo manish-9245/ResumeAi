@@ -86,7 +86,7 @@ erDiagram
     }
     profiles {
         uuid id PK
-        uuid user_id UK_FK
+        uuid user_id UK, FK
         text name
         text email
         text resume_text
@@ -139,8 +139,8 @@ erDiagram
         timestamptz created_at
     }
     ai_cache {
-        uuid user_id PK_FK
-        text key PK
+        uuid user_id PK, FK
+        text `key` PK "composite PK"
         jsonb value
         timestamptz created_at
     }
