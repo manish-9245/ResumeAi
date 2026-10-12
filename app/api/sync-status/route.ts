@@ -19,7 +19,8 @@ export async function GET() {
   const tables: Record<string, { ok: boolean; detail?: string; count?: number }> = {};
   for (const t of TABLES) {
     try {
-      const r = await sb.from(t).select("id", { count: "exact", head: true }).eq("user_id", auth.userId).limit(1);
+      // Select "*" — column sets differ per table (ai_cache has no id column).
+      const r = await sb.from(t).select("*", { count: "exact", head: true }).eq("user_id", auth.userId).limit(1);
       tables[t] = r.error
         ? { ok: false, detail: r.error.message.slice(0, 120) }
         : { ok: true, count: r.count ?? undefined };
