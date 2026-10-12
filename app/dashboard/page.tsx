@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import Link from "next/link";
 import { useApp } from "@/lib/store";
 import { AppShell, ScoreDial, Meter, Empty, Chip } from "@/components/shell";
@@ -6,10 +7,42 @@ import { readiness, recommendRoles } from "@/lib/analysis";
 import { Reveal } from "@/components/reveal";
 import { ArrowRight, UploadCloud, Briefcase, Map } from "lucide-react";
 
+interface RoleRec { role: string; why: string; lift: string }
+
 export default function Dashboard() {
   const { profile, health, fullHealth, jobs, avgMatch, verifiedCount, quiz } = useApp();
   const ready = readiness(profile, avgMatch, verifiedCount);
   const h = fullHealth as { score: number; issues: { section: string; severity: string; message: string; fix: string }[]; strengths: string[] } | null;
+
+  // Rule-based fits paint instantly; AI personalization enhances when available.
+  const baseRecs = React.useMemo(() => (profile ? recommendRoles(profile) : [] as RoleRec[]), [profile]);
+  const [aiRecs, setAiRecs] = React.useState<RoleRec[] | null>(null);
+  const [rolesKind, setRolesKind] = React.useState<"idle" | "loading" | "ai" | "rules">("idle");
+  const rolesSig = profile ? JSON.stringify({ s: [...profile.skills].sort(), e: profile.experience, p: profile.projects }) : "";
+
+  React.useEffect(() => {
+    if (!profile || !rolesSig) return;
+    let cancelled = false;
+    setRolesKind("loading");
+    setAiRecs(null);
+    fetch("/api/ai?kind=roles", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile }),
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        if (cancelled) return;
+        if (Array.isArray(j.roles) && j.roles.length >= 2) {
+          setAiRecs(j.roles);
+          setRolesKind(j.aiPersonalized ? "ai" : "rules");
+        } else {
+          setRolesKind("rules");
+        }
+      })
+      .catch(() => { if (!cancelled) setRolesKind("rules"); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rolesSig]);
 
   if (!profile) {
     return (
@@ -23,7 +56,7 @@ export default function Dashboard() {
     );
   }
 
-  const recs = recommendRoles(profile);
+  const recs = aiRecs ?? baseRecs;
   const nextSteps = [
     h && h.score < 70 ? `Raise health (${h.score}%) — fix: ${h.issues[0]?.fix ?? "add metrics"}` : null,
     jobs.length === 0 ? "Paste your first JD on Jobs & Match" : avgMatch !== null && avgMatch < 70 ? `Top gap: ${jobs[0]?.missing[0] ?? "a deploy skill"} — see Roadmap` : null,
@@ -76,7 +109,18 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="card min-w-0 p-4 sm:p-6">
-          <div className="font-display text-[16px] font-bold">Roles that fit now</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="font-display text-[16px] font-bold">Roles that fit now</div>
+            {rolesKind === "loading" && (
+              <span className="font-data rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide" style={{ background: "#F0F3F9", color: "#3F4A63" }}>PERSONALIZING…</span>
+            )}
+            {rolesKind === "ai" && (
+              <span className="font-data rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide" title="Generated for your profile by AI — decision-support, not a hiring verdict" style={{ background: "#E4EBFF", color: "#1E40D8" }}>AI-PERSONALIZED</span>
+            )}
+            {rolesKind === "rules" && (
+              <span className="font-data rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide" title="Rule-based fits from your detected skills" style={{ background: "#F0F3F9", color: "#3F4A63" }}>RULE-BASED</span>
+            )}
+          </div>
           <div className="mt-3 grid gap-2.5">
             {recs.map((r) => (
               <div key={r.role} className="min-w-0 rounded-[10px] border px-3.5 py-2.5" style={{ borderColor: "#E2E8F2" }}>

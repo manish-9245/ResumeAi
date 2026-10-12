@@ -124,6 +124,9 @@ body {
 @keyframes page-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .page-enter { animation: page-enter .45s cubic-bezier(.2,.8,.2,1) both; }
 
+@keyframes drawer-in { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+.drawer-enter { animation: drawer-in .25s cubic-bezier(.2,.8,.2,1) both; }
+
 .reveal { opacity: 0; transform: translateY(22px); transition: opacity .6s cubic-bezier(.2,.8,.2,1), transform .6s cubic-bezier(.2,.8,.2,1); }
 .reveal.is-visible { opacity: 1; transform: none; }
 
@@ -135,6 +138,7 @@ body {
   .shimmer, .shimmer-bar, .loader-dial, .step-spin, .typing-dots > span, .marquee-track { animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .page-enter { animation: none; }
+  .drawer-enter { animation: none; }
 }
 
 @media (max-width: 1023px) {

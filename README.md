@@ -31,7 +31,7 @@ flowchart TB
     end
     subgraph Data["Supabase free tier"]
         AUTH["Auth (email)"]
-        DB[("Postgres + RLS\nprofiles · analyses · job_matches\nroadmaps · quiz_attempts · ai_cache")]
+        DB[("Postgres + RLS\nprofiles · analyses · job_matches\nroadmaps · quiz_attempts · ai_cache · chat_sessions")]
     end
     subgraph Ext["Free external APIs (no keys)"]
         GEM["Gemini Flash\n(AI Studio free tier)"]
@@ -72,6 +72,103 @@ sequenceDiagram
         A->>D: persist analysis row (RLS-scoped)
         A-->>U: result + analysisId
     end
+```
+
+### Entity-relationship diagram
+
+Source of truth: `supabase/schema.sql`. Every table is RLS owner-only (`auth.uid() = user_id`).
+
+```mermaid
+erDiagram
+    auth_users {
+        uuid id PK
+        text email
+    }
+    profiles {
+        uuid id PK
+        uuid user_id UK_FK
+        text name
+        text email
+        text resume_text
+        jsonb parsed
+        jsonb health
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    job_matches {
+        uuid id PK
+        uuid user_id FK
+        uuid profile_id FK
+        text title
+        text company
+        text jd
+        text jd_hash
+        text strategy
+        jsonb result
+        timestamptz created_at
+    }
+    analyses {
+        uuid id PK
+        uuid user_id FK
+        text resume_hash
+        text resume_text
+        jsonb parsed
+        jsonb health
+        text ai_note
+        timestamptz created_at
+    }
+    roadmaps {
+        uuid id PK
+        uuid user_id FK
+        uuid job_match_id FK
+        text title
+        jsonb gaps
+        jsonb steps
+        text cache_key
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    quiz_attempts {
+        uuid id PK
+        uuid user_id FK
+        jsonb topics
+        int count
+        jsonb questions
+        jsonb answers
+        int score
+        timestamptz created_at
+    }
+    ai_cache {
+        uuid user_id PK_FK
+        text key PK
+        jsonb value
+        timestamptz created_at
+    }
+    chat_sessions {
+        text id PK
+        uuid user_id FK
+        text title
+        jsonb messages
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    auth_users ||--|| profiles : "has one (profiles_user_unique)"
+    auth_users ||--o{ job_matches : owns
+    profiles ||--o{ job_matches : "profile_id, nullable, on delete cascade"
+    auth_users ||--o{ analyses : owns
+    auth_users ||--o{ roadmaps : owns
+    job_matches ||--o{ roadmaps : "job_match_id, nullable, on delete set null"
+    auth_users ||--o{ quiz_attempts : owns
+    auth_users ||--o{ ai_cache : owns
+    auth_users ||--o{ chat_sessions : owns
+```
+
+Notes:
+- `profiles.user_id` is unique — one canonical profile row per user (last-write-wins sync).
+- `analyses` dedupes by `unique(user_id, resume_hash)` — identical resume re-uploads cost 0 tokens.
+- `ai_cache` is keyed by `(user_id, key)` — match strategy + wording rewrites.
+- `roadmaps.job_match_id` and `job_matches.profile_id` are nullable optionals, not required parents.
 ```
 
 ## Engineering that keeps it at $0/mo

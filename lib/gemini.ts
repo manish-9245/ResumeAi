@@ -162,6 +162,32 @@ export async function aiImprove(profile: ParsedProfile) {
   }
 }
 
+/** AI-personalized entry-level role fits. Deterministic fallback always works (demo mode). */
+export async function aiRoles(profile: ParsedProfile) {
+  const fallback = recommendRoles(profile);
+  if (!hasKey()) return { roles: fallback, aiPersonalized: false as const };
+  try {
+    const text = await genText(
+      `${GUARD}\nYou are a career instrument for Indian college students. Given this parsed resume profile, recommend 3-4 entry-level roles (internships only) that fit NOW. Ground every why/lift ONLY in the listed skills, experience and projects — never invent qualifications. Present fits as decision-support, never hiring verdicts.\nReturn ONLY JSON: {"roles":[{"role":string,"why":string,"lift":string}]} where why names the detected proof (max 24 words) and lift names ONE next skill plus its payoff (max 20 words).\n\nProfile:\n${JSON.stringify({ skills: profile.skills, skillLevels: profile.skillLevels, experience: profile.experience.slice(0, 4), projects: profile.projects.slice(0, 4), education: profile.education.slice(0, 2) })}`,
+      true
+    );
+    const j = JSON.parse(text) as { roles?: unknown } | unknown[];
+    const arr = Array.isArray(j) ? j : Array.isArray((j as { roles?: unknown }).roles) ? (j as { roles: unknown[] }).roles : [];
+    const roles = arr
+      .filter((r): r is Record<string, unknown> => !!r && typeof r === "object")
+      .map((r) => ({
+        role: String(r.role ?? "").replace(/\s+/g, " ").trim().slice(0, 60),
+        why: String(r.why ?? "").replace(/\s+/g, " ").trim().slice(0, 220),
+        lift: String(r.lift ?? "").replace(/\s+/g, " ").trim().slice(0, 220),
+      }))
+      .filter((r) => r.role.length >= 3 && r.why.length >= 8);
+    if (roles.length < 2) return { roles: fallback, aiPersonalized: false as const };
+    return { roles: roles.slice(0, 4), aiPersonalized: true as const };
+  } catch {
+    return { roles: fallback, aiPersonalized: false as const };
+  }
+}
+
 export async function aiChat(profile: ParsedProfile | null, history: { role: string; text: string }[], message: string) {
   if (!hasKey()) {
     // Grounded rule-based fallback

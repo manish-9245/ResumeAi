@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { aiRoadmap, aiQuiz, aiImprove, aiChat } from "@/lib/gemini";
+import { aiRoadmap, aiQuiz, aiImprove, aiChat, aiRoles } from "@/lib/gemini";
 import { aiCacheGet, aiCacheSet, authed, findRoadmap, saveRoadmap, sha } from "@/lib/server-db";
 
 export async function POST(req: Request) {
@@ -40,6 +40,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ ...r, cached: false });
     }
     if (kind === "chat") return NextResponse.json(await aiChat(body.profile ?? null, body.history ?? [], body.message ?? ""));
+    if (kind === "roles") {
+      if (!body.profile) return NextResponse.json({ error: "profile required." }, { status: 400 });
+      const p = body.profile as { skills?: string[]; experience?: string[]; projects?: string[] };
+      const sig = sha(JSON.stringify({ s: [...(p.skills ?? [])].sort(), e: p.experience ?? [], p: p.projects ?? [] }));
+      const auth = await authed().catch(() => null);
+      if (auth) {
+        const hit = await aiCacheGet(auth.userId, auth.sb, `roles:${sig}`).catch(() => null);
+        if (hit?.value) return NextResponse.json({ ...(hit.value as object), cached: true });
+      }
+      const r = await aiRoles(body.profile);
+      if (auth) await aiCacheSet(auth.userId, auth.sb, `roles:${sig}`, r).catch(() => {});
+      return NextResponse.json({ ...r, cached: false });
+    }
     return NextResponse.json({ error: "Unknown kind" }, { status: 400 });
   } catch {
     return NextResponse.json({ error: "AI request failed." }, { status: 500 });

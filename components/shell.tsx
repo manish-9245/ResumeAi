@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { readiness } from "@/lib/analysis";
 import { FullPageLoader } from "./loading";
 import {
-  LayoutDashboard, UploadCloud, Briefcase, Map, BadgeCheck, MessagesSquare, User, Home, Trash2, LogOut,
+  LayoutDashboard, UploadCloud, Briefcase, Map, BadgeCheck, MessagesSquare, User, Trash2, LogOut, Menu, X,
 } from "lucide-react";
 
 const NAV = [
@@ -62,6 +62,28 @@ export function AppShell({ children, title, sub, requireAuth = false }: { childr
   const { profile, avgMatch, verifiedCount, clearAll, hydrated, cloudSync } = useApp();
   const { user, loading, signOut } = useAuth();
   const ready = readiness(profile, avgMatch, verifiedCount);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const menuBtn = React.useRef<HTMLButtonElement>(null);
+  const closeBtn = React.useRef<HTMLButtonElement>(null);
+
+  const closeMenu = React.useCallback((refocus = false) => {
+    setMobileOpen(false);
+    if (refocus) requestAnimationFrame(() => menuBtn.current?.focus());
+  }, []);
+
+  // Drawer open: focus close control, Escape to close, lock body scroll.
+  React.useEffect(() => {
+    if (!mobileOpen) return;
+    closeBtn.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeMenu(true); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen, closeMenu]);
 
   React.useEffect(() => {
     if (requireAuth && !loading && !user) {
@@ -144,11 +166,30 @@ export function AppShell({ children, title, sub, requireAuth = false }: { childr
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col lg:pl-[264px]">
-        <div className="nav-mobile no-scrollbar sticky top-0 z-20 flex items-center gap-2 overflow-x-auto border-b px-3 py-2.5" style={{ borderColor: "#E2E8F2", background: "rgba(255,255,255,.96)", backdropFilter: "blur(10px)" }}>
-          <Link href="/" className="mr-1 flex shrink-0 items-center gap-1.5 text-[13px] font-bold"><Home size={15} /> ResumeAI</Link>
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="inline-flex min-h-[36px] shrink-0 items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-medium" style={{ borderColor: path === n.href ? "#2B5CFF" : "#E2E8F2", background: path === n.href ? "#2B5CFF" : "#fff", color: path === n.href ? "#fff" : "#0E1525" }}>{n.label}</Link>
-          ))}
+        <div className="nav-mobile sticky top-0 z-20 flex items-center gap-2 border-b px-3 py-2.5" style={{ borderColor: "#E2E8F2", background: "rgba(255,255,255,.96)", backdropFilter: "blur(10px)" }}>
+          <button
+            ref={menuBtn}
+            onClick={() => setMobileOpen(true)}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-menu"
+            aria-label="Open menu"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border hover:bg-black/5"
+            style={{ borderColor: "#E2E8F2" }}
+          >
+            <Menu size={18} />
+          </button>
+          <Link href="/" className="flex min-w-0 items-center gap-2" aria-label="ResumeAI home">
+            <Image src="/logo.png" alt="ResumeAI logo" width={28} height={28} className="rounded-[8px]" priority />
+            <span className="font-display truncate text-[15px] font-bold">ResumeAI</span>
+          </Link>
+          <Link
+            href="/profile"
+            aria-label="Open profile"
+            className="font-display ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full text-[13px] font-bold text-white"
+            style={{ background: "#2B5CFF" }}
+          >
+            {(user?.email ?? profile?.name ?? "?").trim().charAt(0).toUpperCase()}
+          </Link>
         </div>
         <main key={path} className="page-enter mx-auto w-full max-w-[1120px] min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-8">
           <header className="mb-5 sm:mb-6">
@@ -158,6 +199,81 @@ export function AppShell({ children, title, sub, requireAuth = false }: { childr
           {body}
         </main>
       </div>
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="absolute inset-0 bg-black/30" onClick={() => closeMenu()} />
+          <div id="mobile-menu" className="drawer-enter absolute inset-y-0 left-0 flex w-[300px] max-w-[85vw] flex-col gap-4 overflow-y-auto border-r bg-white p-5" style={{ borderColor: "#E2E8F2" }}>
+            <div className="flex shrink-0 items-center gap-2.5">
+              <Image src="/logo.png" alt="ResumeAI logo" width={32} height={32} className="rounded-[10px]" />
+              <span>
+                <span className="font-display block text-[16px] font-bold leading-none">ResumeAI</span>
+                <span className="font-data block text-[10px] tracking-[.14em]" style={{ color: "#7A86A3" }}>CAREER INSTRUMENT</span>
+              </span>
+              <button
+                ref={closeBtn}
+                onClick={() => closeMenu(true)}
+                aria-label="Close menu"
+                className="ml-auto grid h-10 w-10 place-items-center rounded-[10px] hover:bg-black/5"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="font-data shrink-0 text-[10px] font-bold tracking-[.18em]" style={{ color: "#7A86A3" }}>WORKSPACE</div>
+            <nav className="grid gap-1" aria-label="Primary">
+              {NAV.map((n) => {
+                const Icon = n.icon;
+                const active = path === n.href;
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    onClick={() => closeMenu()}
+                    aria-current={active ? "page" : undefined}
+                    data-active={active}
+                    className="rail-link flex min-h-[44px] items-center gap-2.5 px-3 py-2.5 text-[14px] font-medium"
+                  >
+                    <Icon size={17} strokeWidth={2.2} /> {n.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="mt-auto grid w-full shrink-0 gap-2.5 rounded-[12px] border p-3.5" style={{ background: "#F4F6FB", borderColor: "#E2E8F2" }}>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="font-display grid h-8 w-8 shrink-0 place-items-center rounded-full text-[13px] font-bold text-white" style={{ background: "#2B5CFF" }} aria-hidden>
+                  {(user?.email ?? profile?.name ?? "?").trim().charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className="flex items-center gap-1.5">
+                    <span className="block truncate text-[12px] font-semibold" title={user?.email ?? ""}>{user ? user.email : "Not signed in"}</span>
+                    {user && (
+                      <span title={cloudSync ? "Synced across your devices" : "Local only — syncing…"} aria-label={cloudSync ? "Synced" : "Syncing"}
+                        className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: cloudSync ? "#0E9F6E" : "#B45309" }} />
+                    )}
+                  </span>
+                  <span className="block truncate text-[11px]" style={{ color: "#3F4A63" }}>{profile ? profile.name : "No resume yet"}</span>
+                </span>
+                {profile && (
+                  <button onClick={() => { clearAll(); closeMenu(); }} title="Reset my workspace data" aria-label="Reset my workspace data" className="shrink-0 rounded-lg p-2 hover:bg-black/5" style={{ color: "#7A86A3" }}>
+                    <Trash2 size={14} />
+                  </button>
+                )}
+                {user && (
+                  <button onClick={() => { closeMenu(); handleSignOut(); }} title="Sign out" aria-label="Sign out" className="shrink-0 rounded-lg p-2 hover:bg-black/5" style={{ color: "#7A86A3" }}>
+                    <LogOut size={14} />
+                  </button>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-medium" style={{ color: "#3F4A63" }}>
+                  <span>Readiness</span>
+                  <span className="font-data text-[12px] font-bold" style={{ color: "#0E1525" }}>{ready}%</span>
+                </div>
+                <div className="mt-1.5"><Meter value={ready} /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

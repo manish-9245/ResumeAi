@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { PwaInstallButton } from "./pwa";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -58,10 +59,14 @@ export function MobileMenu() {
           ))}
           <Link
             href="/upload" onClick={() => setOpen(false)}
-            className="btn-primary mt-1 px-3.5 py-2.5 text-center text-[14px]"
+            className="btn-primary mt-1 min-h-[44px] px-3.5 py-2.5 text-center text-[14px]"
           >
             Analyze resume
           </Link>
+          <PwaInstallButton
+            className="mt-1 min-h-[44px] rounded-[12px] border px-3.5 py-2.5 text-center text-[14px] font-bold"
+            style={{ borderColor: "#0E9F6E", background: "#E6F7EE", color: "#0B7A55" }}
+          />
         </div>
       )}
     </span>
