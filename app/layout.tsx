@@ -9,7 +9,9 @@ const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["lat
 const body = Inter({ variable: "--font-body", subsets: ["latin"] });
 const mono = JetBrains_Mono({ variable: "--font-data", subsets: ["latin"] });
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+import { siteUrl } from "@/lib/site";
+
+const SITE_URL = siteUrl();
 const SITE_NAME = "ResumeAI";
 const SITE_DESC =
   "Upload one PDF and get a resume health score, exact job-match percentages, skill gaps with priorities, a learn-first roadmap, verification quizzes and a career assistant.";
