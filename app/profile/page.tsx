@@ -150,8 +150,20 @@ export default function ProfilePage() {
     };
     setResume(resumeText, next, fullHealth); // store syncs to cloud (same device + others)
     setDirty(false); setEditingName(false);
-    setSaved(user ? "Saved — synced across your devices" : "Saved");
-    setTimeout(() => setSaved(""), 2600);
+    // Honest confirmation: only claim cross-device sync after the server proves it.
+    setSaved("Saving…");
+    setTimeout(async () => {
+      try {
+        const r = await fetch("/api/sync-status");
+        const j = await r.json();
+        const missing: string[] = j.missing ?? ["unknown"];
+        setSaved(missing.length === 0 ? "Saved — synced across your devices" : "Saved on this device only — cloud sync is off (see panel above)");
+        if (j.signedIn) setSync({ tables: j.tables ?? {}, missing });
+      } catch {
+        setSaved(user ? "Saved — will sync when you're back online" : "Saved");
+      }
+      setTimeout(() => setSaved(""), 4000);
+    }, 900);
   }
 
   if (!profile) return <AppShell requireAuth title="Profile" sub="Education, skills + levels, experience, projects, certifications — one source of truth."><Empty title="No profile yet" body="Your profile is created automatically when you analyze a resume." action={<a href="/upload" className="btn-primary px-5 py-3 text-[14px]">Upload resume</a>} /></AppShell>;
