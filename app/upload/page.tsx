@@ -2,17 +2,14 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
-import { useAuth } from "@/lib/auth";
 import { AppShell, ScoreDial, Meter, Chip } from "@/components/shell";
 import { AnalyzingSteps, DossierSkeleton } from "@/components/loading";
 import { extractTextFromPDF, SAMPLE_RESUME } from "@/lib/pdf";
-import { createClient } from "@/utils/supabase/client";
 import { FileUp, ClipboardPaste, Sparkles, Loader2 } from "lucide-react";
 
 export default function UploadPage() {
   const router = useRouter();
   const { setResume } = useApp();
-  const { user } = useAuth();
   const [text, setText] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [stage, setStage] = React.useState(0);
@@ -34,16 +31,7 @@ export default function UploadPage() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Analysis failed");
       setResult(j);
-      setResume(t, j.profile, j.health);
-      // Persist to the signed-in user's isolated rows (RLS: auth.uid() = user_id)
-      try {
-        const sb = createClient();
-        if (sb && user) {
-          const { data } = await (sb as unknown as { auth: { getSession: () => Promise<{ data: { session: { user: { id: string } } | null } }> } }).auth.getSession();
-          const uid = data.session?.user?.id ?? user.id;
-          await (sb as unknown as { from: (t: string) => { insert: (v: unknown) => Promise<unknown> } }).from("profiles").insert({ user_id: uid, name: j.profile.name, email: j.profile.email, resume_text: t.slice(0, 8000), parsed: j.profile, health: j.health });
-        }
-      } catch {}
+      setResume(t, j.profile, j.health); // store syncs to cloud (same device + others)
     } catch (e) { setErr(e instanceof Error ? e.message : "Failed"); }
     finally { setBusy(false); }
   }

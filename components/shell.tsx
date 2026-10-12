@@ -58,7 +58,7 @@ export function Meter({ value, color }: { value: number; color?: string }) {
 export function AppShell({ children, title, sub, requireAuth = false }: { children: React.ReactNode; title: string; sub?: string; requireAuth?: boolean }) {
   const path = usePathname();
   const router = useRouter();
-  const { profile, avgMatch, verifiedCount, clearAll, hydrated } = useApp();
+  const { profile, avgMatch, verifiedCount, clearAll, hydrated, cloudSync } = useApp();
   const { user, loading, signOut } = useAuth();
   const ready = readiness(profile, avgMatch, verifiedCount);
 
@@ -113,7 +113,13 @@ export function AppShell({ children, title, sub, requireAuth = false }: { childr
               {(user?.email ?? profile?.name ?? "?").trim().charAt(0).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block truncate text-[12px] font-semibold" title={user?.email ?? ""}>{user ? user.email : "Not signed in"}</span>
+              <span className="flex items-center gap-1.5">
+                <span className="block truncate text-[12px] font-semibold" title={user?.email ?? ""}>{user ? user.email : "Not signed in"}</span>
+                {user && (
+                  <span title={cloudSync ? "Synced across your devices" : "Local only — syncing…"} aria-label={cloudSync ? "Synced" : "Syncing"}
+                    className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: cloudSync ? "#0E9F6E" : "#B45309" }} />
+                )}
+              </span>
               <span className="block truncate text-[11px]" style={{ color: "#3F4A63" }}>{profile ? profile.name : "No resume yet"}</span>
             </span>
             {profile && (

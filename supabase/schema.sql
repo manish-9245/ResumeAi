@@ -72,6 +72,23 @@ create table if not exists ai_cache (
   primary key (user_id, key)
 );
 
+-- One canonical profile row per user (enables last-write-wins sync).
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_user_unique') then
+    alter table profiles add constraint profiles_user_unique unique(user_id);
+  end if;
+end $$;
+
+-- Chat sessions (synced so conversations survive across devices).
+create table if not exists chat_sessions (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text,
+  messages jsonb default '[]'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 alter table profiles enable row level security;
 alter table job_matches enable row level security;
 alter table analyses enable row level security;
@@ -107,6 +124,10 @@ drop policy if exists "aicache_owner_read" on ai_cache;
 drop policy if exists "aicache_owner_write" on ai_cache;
 drop policy if exists "aicache_owner_update" on ai_cache;
 drop policy if exists "aicache_owner_delete" on ai_cache;
+drop policy if exists "chats_owner_read" on chat_sessions;
+drop policy if exists "chats_owner_write" on chat_sessions;
+drop policy if exists "chats_owner_update" on chat_sessions;
+drop policy if exists "chats_owner_delete" on chat_sessions;
 
 -- Owner-only policies: separation of data by auth.uid().
 create policy "profiles_owner_read" on profiles for select using (auth.uid() = user_id);
@@ -139,9 +160,17 @@ create policy "aicache_owner_write" on ai_cache for insert with check (auth.uid(
 create policy "aicache_owner_update" on ai_cache for update using (auth.uid() = user_id);
 create policy "aicache_owner_delete" on ai_cache for delete using (auth.uid() = user_id);
 
+alter table chat_sessions enable row level security;
+
+create policy "chats_owner_read" on chat_sessions for select using (auth.uid() = user_id);
+create policy "chats_owner_write" on chat_sessions for insert with check (auth.uid() = user_id);
+create policy "chats_owner_update" on chat_sessions for update using (auth.uid() = user_id);
+create policy "chats_owner_delete" on chat_sessions for delete using (auth.uid() = user_id);
+
 create index if not exists profiles_user_idx on profiles(user_id, updated_at desc);
 create index if not exists matches_user_idx on job_matches(user_id, created_at desc);
 create index if not exists matches_hash_idx on job_matches(user_id, jd_hash);
 create index if not exists analyses_hash_idx on analyses(user_id, resume_hash);
 create index if not exists roadmaps_user_idx on roadmaps(user_id, created_at desc);
 create index if not exists attempts_user_idx on quiz_attempts(user_id, created_at desc);
+create index if not exists chats_user_idx on chat_sessions(user_id, updated_at desc);

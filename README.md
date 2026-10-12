@@ -98,10 +98,11 @@ All prompts live in `lib/gemini.ts` and follow the same discipline:
 5. **Rule-based chat fallback** — without a key, the assistant answers from the parsed profile with grounded templates (gaps → learn order, jobs → fitted roles) instead of hallucinating.
 6. **Batch, don't chat** — one strategy call per 3-JD batch, one summary embedded in the parse call. No multi-turn chains anywhere in the pipeline.
 
-## Data isolation
+## Data isolation & cross-device sync
 
 - Supabase Auth (email) gates every app page; signed-out visitors bounce to `/auth?next=…`.
-- Every table is RLS owner-only (`auth.uid() = user_id`); the SQL in `supabase/schema.sql` drops legacy open policies first.
+- Every table is RLS owner-only (`auth.uid() = user_id`); the SQL in `supabase/schema.sql` drops legacy open policies first. **Re-run it after pulling — it adds `chat_sessions` and a `profiles_user_unique` constraint.**
+- **Two-way sync, last-write-wins**: profile/resume pushes on every analyze + save and restores the newest copy on login (timestamp-compared against local edits, so offline work isn't clobbered); chats merge by id with newer-`updatedAt` winning and debounced pushes; matches, roadmaps and quiz attempts were already server-persisted with history lists. A green dot in the sidebar confirms cloud sync.
 - Client state is namespaced per user (`resumeai_state_<uid>`); switching accounts swaps workspaces.
 - Addressable, shareable results: `/jobs/[id]`, `/roadmap/[id]`, `/quiz/[id]` — all server-rendered and RLS-scoped.
 

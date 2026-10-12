@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useApp } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { AppShell, Empty, Chip, Meter } from "@/components/shell";
-import { createClient } from "@/utils/supabase/client";
 import type { ParsedProfile, SkillLevel } from "@/lib/types";
 import {
   GraduationCap, Briefcase, Rocket, Award, Mail, UserRound, Phone,
@@ -131,21 +130,9 @@ export default function ProfilePage() {
       education: edu, experience: exp, projects: proj, certifications: certs,
       skills, skillLevels: levels,
     };
-    setResume(resumeText, next, fullHealth);
+    setResume(resumeText, next, fullHealth); // store syncs to cloud (same device + others)
     setDirty(false); setEditingName(false);
-    setSaved(user ? "Saved to your private workspace" : "Saved");
-    try {
-      const sb = createClient();
-      if (sb && user) {
-        (sb as unknown as {
-          auth: { getSession: () => Promise<{ data: { session: { user: { id: string } } | null } }> };
-          from: (t: string) => { upsert: (v: unknown) => Promise<unknown> };
-        }).auth.getSession().then(({ data }) => {
-          const uid = data.session?.user?.id ?? user.id;
-          (sb as unknown as { from: (t: string) => { upsert: (v: unknown) => Promise<unknown> } }).from("profiles").upsert({ user_id: uid, name: next.name, email: next.email, parsed: next });
-        });
-      }
-    } catch {}
+    setSaved(user ? "Saved — synced across your devices" : "Saved");
     setTimeout(() => setSaved(""), 2600);
   }
 

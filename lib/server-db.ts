@@ -162,6 +162,79 @@ export async function getRoadmap(userId: string, sb: SB, id: string): Promise<Ro
   });
 }
 
+// -- Profile sync (one canonical row per user, last-write-wins) --
+export async function getLatestProfile(userId: string, sb: SB): Promise<Row | null> {
+  return cached(`prof:${userId}`, 30 * 1000, async () => {
+    try {
+      const t = await table(sb);
+      const q = t.from("profiles").select("*") as unknown as Q;
+      const { data } = await q.eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).single();
+      return data;
+    } catch { return null; }
+  });
+}
+
+export async function upsertProfile(userId: string, sb: SB, row: { name: string; email: string; resume_text: string; parsed: unknown; health: unknown }): Promise<boolean> {
+  try {
+    const t = await table(sb);
+    const payload = { user_id: userId, ...row, updated_at: new Date().toISOString() };
+    let r = await t.from("profiles").upsert(payload, { onConflict: "user_id" });
+    if (r.error) {
+      // Unique constraint may predate this migration — plain insert still works (loader takes latest).
+      r = await t.from("profiles").insert(payload);
+      if (r.error) return false;
+    }
+    bust(`prof:${userId}`);
+    return true;
+  } catch { return false; }
+}
+
+// -- Chat sessions sync --
+export interface ChatRow {
+  id: string; title: string;
+  messages: { role: string; text: string }[];
+  createdAt: number; updatedAt: number;
+}
+
+export async function listChats(userId: string, sb: SB): Promise<Row[]> {
+  return cached(`chats:${userId}`, 30 * 1000, async () => {
+    try {
+      const t = await table(sb);
+      const q = t.from("chat_sessions").select("id,title,messages,created_at,updated_at") as unknown as Q;
+      let out: Row[] = [];
+      await q.eq("user_id", userId).order("updated_at", { ascending: false }).limit(20).then((v) => { out = v.data ?? []; });
+      return out;
+    } catch { return []; }
+  });
+}
+
+export async function upsertChats(userId: string, sb: SB, chats: ChatRow[]): Promise<boolean> {
+  try {
+    const t = await table(sb);
+    const rows = chats.slice(0, 20).map((c) => ({
+      id: c.id, user_id: userId, title: c.title, messages: c.messages,
+      created_at: new Date(c.createdAt || Date.now()).toISOString(),
+      updated_at: new Date(c.updatedAt || c.createdAt || Date.now()).toISOString(),
+    }));
+    if (!rows.length) return true;
+    const r = await t.from("chat_sessions").upsert(rows, { onConflict: "id" });
+    if (r.error) return false;
+    bust(`chats:${userId}`);
+    return true;
+  } catch { return false; }
+}
+
+export async function deleteChatRow(userId: string, sb: SB, id: string): Promise<void> {
+  try {
+    const t = await table(sb);
+    const del = (t.from("chat_sessions") as unknown as {
+      delete: () => { eq: (c: string, v: unknown) => { eq: (c: string, v: unknown) => Promise<unknown> } };
+    }).delete();
+    await del.eq("id", id).eq("user_id", userId);
+    bust(`chats:${userId}`);
+  } catch {}
+}
+
 // -- Quiz attempts (metrics) --
 export async function saveQuizAttempt(userId: string, sb: SB, row: { topics: unknown; count: number; questions: unknown; answers: unknown; score: number }): Promise<string | null> {
   try {
