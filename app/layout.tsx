@@ -9,9 +9,42 @@ const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["lat
 const body = Inter({ variable: "--font-body", subsets: ["latin"] });
 const mono = JetBrains_Mono({ variable: "--font-data", subsets: ["latin"] });
 
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const SITE_NAME = "ResumeAI";
+const SITE_DESC =
+  "Upload one PDF and get a resume health score, exact job-match percentages, skill gaps with priorities, a learn-first roadmap, verification quizzes and a career assistant.";
+
 export const metadata: Metadata = {
-  title: "ResumeAI — From PDF to Career Plan",
-  description: "Resume health, job match, skill gaps, roadmap, quiz and assistant — one honest career instrument for students.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "ResumeAI — From PDF to Career Plan",
+    template: "%s · ResumeAI",
+  },
+  description: SITE_DESC,
+  keywords: [
+    "resume analyzer", "resume health score", "job match", "skill gap analysis",
+    "career roadmap", "resume checker for students", "ATS resume check",
+    "internship preparation", "AI career assistant",
+  ],
+  authors: [{ name: "ResumeAI" }],
+  creator: "ResumeAI",
+  applicationName: "ResumeAI",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "ResumeAI — From PDF to Career Plan",
+    description: SITE_DESC,
+    url: "/",
+    siteName: SITE_NAME,
+    locale: "en_US",
+    type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "ResumeAI — your resume, measured like an instrument" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ResumeAI — From PDF to Career Plan",
+    description: SITE_DESC,
+    images: ["/og.png"],
+  },
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/logo.png" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
@@ -22,7 +55,6 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "ResumeAI",
   },
-  applicationName: "ResumeAI",
 };
 
 export const viewport: Viewport = {

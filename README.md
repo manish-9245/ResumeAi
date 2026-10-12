@@ -119,6 +119,7 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes | Supabase publishable (anon) key |
 | `GEMINI_API_KEY` | no | Google AI Studio key — unlocks AI structuring; app runs deterministically without it |
 | `GEMINI_MODEL` | no | Defaults to `gemini-flash-latest` |
+| `NEXT_PUBLIC_SITE_URL` | no | Canonical site URL for OG tags, sitemap and robots (defaults to localhost) |
 
 Then run `supabase/schema.sql` in your Supabase SQL editor (tables + RLS + indexes) and enable the Email auth provider.
 

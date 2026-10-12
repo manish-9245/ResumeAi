@@ -30,8 +30,29 @@ function GapRow({ skill, tone, note }: { skill: string; tone: "have" | "partial"
 }
 
 export default function Landing() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        name: "ResumeAI",
+        url: "/",
+        description: "Resume health scoring, job matching, skill-gap roadmaps and verification quizzes for students.",
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: "ResumeAI",
+        applicationCategory: "EducationalApplication",
+        operatingSystem: "Web",
+        isAccessibleForFree: true,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        description: "Upload one PDF and get a resume health score, job-match percentages, skill gaps, a learning roadmap and quizzes.",
+      },
+    ],
+  };
   return (
     <main className={`${outfit.className} w-full max-w-full overflow-x-hidden`} style={{ background: "#F4F6FB", color: "#0E1525" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Floating glass nav */}
       <div className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
         <nav aria-label="Site" className="flex w-full max-w-fit items-center gap-2 rounded-full border py-2 pl-3 pr-2 shadow-lg" style={{ borderColor: "rgba(226,232,242,.9)", background: "rgba(255,255,255,.78)", backdropFilter: "blur(14px)" }}>
