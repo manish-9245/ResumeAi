@@ -10,6 +10,60 @@ export interface ChatSession {
   messages: ChatMsg[];
 }
 
+interface ChatState {
+  sessions: ChatSession[];
+  activeId: string | null;
+}
+
+type ChatAction =
+  | { type: "load"; sessions: ChatSession[] }
+  | { type: "push"; msg: ChatMsg }
+  | { type: "new" }
+  | { type: "select"; id: string }
+  | { type: "delete"; id: string }
+  | { type: "clear" };
+
+// Pure reducer: dispatch identity is stable, so rapid pushChat calls in one
+// send() can never fork sessions on a stale closure (the old message-loss bug).
+function chatReducer(state: ChatState, action: ChatAction): ChatState {
+  switch (action.type) {
+    case "load":
+      return { sessions: action.sessions, activeId: action.sessions[0]?.id ?? null };
+    case "push": {
+      const { msg } = action;
+      if (!state.sessions.length) {
+        const s = newSession(msg.role === "user" ? titleFrom(msg.text) : "New chat");
+        s.messages = [msg];
+        return { sessions: [s], activeId: s.id };
+      }
+      const id = state.activeId ?? state.sessions[0].id;
+      return {
+        sessions: state.sessions.map((s) => {
+          if (s.id !== id) return s;
+          const title = s.title === "New chat" && msg.role === "user" ? titleFrom(msg.text) : s.title;
+          return { ...s, title, messages: [...s.messages, msg] };
+        }),
+        activeId: id,
+      };
+    }
+    case "new": {
+      const s = newSession();
+      return { sessions: [s, ...state.sessions].slice(0, 20), activeId: s.id };
+    }
+    case "select":
+      return state.sessions.some((s) => s.id === action.id) ? { ...state, activeId: action.id } : state;
+    case "delete": {
+      const next = state.sessions.filter((s) => s.id !== action.id);
+      return {
+        sessions: next,
+        activeId: state.activeId === action.id ? next[0]?.id ?? null : state.activeId,
+      };
+    }
+    case "clear":
+      return { sessions: [], activeId: null };
+  }
+}
+
 function newSession(title = "New chat"): ChatSession {
   return {
     id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
@@ -60,8 +114,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [jobs, setJobsState] = useState<JobMatch[]>([]);
   const [quiz, setQuizState] = useState<QuizQ[]>([]);
   const [verifiedCount, setVerifiedCount] = useState(0);
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [chatState, dispatchChat] = React.useReducer(chatReducer, { sessions: [], activeId: null });
+  const { sessions, activeId } = chatState;
   const [hydrated, setHydrated] = useState(false);
 
   // Load the current user's isolated slice whenever the user changes.
@@ -80,24 +134,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Migrate legacy single-thread chat into a session.
         const stored: ChatSession[] = Array.isArray(s.sessions) ? s.sessions : [];
         if (!stored.length && Array.isArray(s.chat) && s.chat.length) {
-          const mig = newSession(titleFrom(s.chat[0]?.text ?? "Imported chat"));
-          mig.messages = s.chat;
+          const mig = newSession(titleFrom((s.chat[0] as ChatMsg)?.text ?? "Imported chat"));
+          mig.messages = s.chat as ChatMsg[];
           mig.createdAt = Date.now();
-          setSessions([mig]);
-          setActiveId(mig.id);
+          dispatchChat({ type: "load", sessions: [mig] });
         } else {
-          setSessions(stored);
-          setActiveId(stored[0]?.id ?? null);
+          dispatchChat({ type: "load", sessions: stored });
         }
       } else {
         setProfile(null); setResumeText(""); setFullHealth(null);
         setJobsState([]); setVerifiedCount(0);
-        setSessions([]); setActiveId(null);
+        dispatchChat({ type: "clear" });
       }
     } catch {
       setProfile(null); setResumeText(""); setFullHealth(null);
       setJobsState([]); setVerifiedCount(0);
-      setSessions([]); setActiveId(null);
+      dispatchChat({ type: "clear" });
     }
     setQuizState([]);
     setHydrated(true);
@@ -127,39 +179,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setJobs: (j) => setJobsState(j),
     setQuiz: (q) => setQuizState(q),
     setVerified: setVerifiedCount,
-    pushChat: (m) => {
-      if (!sessions.length) {
-        const s = newSession(m.role === "user" ? titleFrom(m.text) : "New chat");
-        s.messages = [m];
-        setSessions([s]);
-        setActiveId(s.id);
-        return;
-      }
-      const id = activeId ?? sessions[0].id;
-      setSessions((prev) => prev.map((s) => {
-        if (s.id !== id) return s;
-        const next = [...s.messages, m];
-        const title = s.title === "New chat" && m.role === "user" ? titleFrom(m.text) : s.title;
-        return { ...s, title, messages: next };
-      }));
-    },
-    newChatSession: () => {
-      const s = newSession();
-      setSessions((prev) => [s, ...prev].slice(0, 20));
-      setActiveId(s.id);
-    },
-    selectSession: (id) => setActiveId(id),
-    deleteSession: (id) => {
-      setSessions((prev) => {
-        const next = prev.filter((s) => s.id !== id);
-        if (activeId === id) setActiveId(next[0]?.id ?? null);
-        return next;
-      });
-    },
+    pushChat: (m) => dispatchChat({ type: "push", msg: m }),
+    newChatSession: () => dispatchChat({ type: "new" }),
+    selectSession: (id) => dispatchChat({ type: "select", id }),
+    deleteSession: (id) => dispatchChat({ type: "delete", id }),
     clearAll: () => {
       setProfile(null); setResumeText(""); setFullHealth(null);
       setJobsState([]); setQuizState([]); setVerifiedCount(0);
-      setSessions([]); setActiveId(null);
+      dispatchChat({ type: "clear" });
       try { localStorage.removeItem(keyFor(user?.id ?? null)); } catch {}
     },
   }), [profile, resumeText, jobs, quiz, verifiedCount, chat, sessions, activeId, fullHealth, hydrated, user?.id]);
