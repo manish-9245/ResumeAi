@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# brag video workspace (build artifacts; final cut ships as public/brag.mp4)
+/brag-output/

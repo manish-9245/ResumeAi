@@ -100,6 +100,17 @@ export default function Landing() {
               See a live sample
             </Link>
           </div>
+          <div className="grid w-full max-w-4xl justify-items-center gap-3">
+            <div className="font-data text-[10px] font-bold tracking-[.14em]" style={{ color: "#3F4A63" }}>WATCH THE TOUR · 0:24</div>
+            <div className="card w-full overflow-hidden shadow-xl" style={{ background: "#0E1525" }}>
+              <video
+                controls preload="metadata" playsInline
+                aria-label="ResumeAI product tour video (24 seconds)"
+                className="aspect-video w-full bg-[#0E1525]"
+                src="/brag.mp4"
+              />
+            </div>
+          </div>
           <ScaleFade className="w-full max-w-4xl">
             <div className="card grid min-w-0 gap-3 p-4 text-left shadow-xl sm:p-5 md:p-6" style={{ background: "#fff" }} aria-label="Sample dossier preview">
               <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5">
