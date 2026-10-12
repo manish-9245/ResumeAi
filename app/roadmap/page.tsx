@@ -77,7 +77,7 @@ function RoadmapInner() {
       )}
       {!busy && roadmapId && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[13px] font-medium" style={{ background: fromCache ? "#E6F7EE" : "#F2F5FF", color: fromCache ? "#0B7A55" : "#1E40D8" }}>
-          {fromCache ? "Loaded your saved roadmap — zero compute, zero tokens." : `Saved${selJob ? ` for ${selJob.title}` : ""}.`}
+          {fromCache ? "Loaded your saved roadmap." : `Saved${selJob ? ` for ${selJob.title}` : ""}.`}
           <a href={`/roadmap/${roadmapId}`} className="ml-auto flex items-center gap-1 font-bold">Open /roadmap/{roadmapId.slice(0, 8)} <ArrowRight size={13} /></a>
         </div>
       )}

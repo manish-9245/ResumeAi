@@ -69,7 +69,7 @@ export default function JobsPage() {
     finally { setBusy(false); }
   }
 
-    // Live listings searched by the profile's own skills (free, no key).
+    // Live listings searched by the profile's own skills.
   const skillKey = profile?.skills.join("|") ?? "";
   React.useEffect(() => {
     if (!profile || !profile.skills.length) return;
@@ -156,8 +156,8 @@ export default function JobsPage() {
           <div>
             <div className="font-display text-[16px] font-bold">Live jobs for your skills</div>
             <div className="text-[12.5px]" style={{ color: "#3F4A63" }}>
-              {liveQueried.length > 0 ? <>Searched for <span className="font-data font-bold">{liveQueried.join(" · ")}</span> · free listings, no key · </> : "Searching free listings for your skills · "}
-              <span className="font-data">REMOTIVE + ARBEITNOW</span>
+              {liveQueried.length > 0 ? <>Matched to <span className="font-data font-bold">{liveQueried.join(" · ")}</span> · </> : "Searching listings matched to your skills · "}
+              <span className="font-data">UPDATED FRESH ON EVERY VISIT</span>
             </div>
           </div>
           {liveBusy && <span className="font-data ml-auto text-[11px] font-bold" style={{ color: "#1E40D8" }}>SEARCHING…</span>}
@@ -187,7 +187,6 @@ export default function JobsPage() {
                   <div className="mt-0.5 text-[12.5px]" style={{ color: "#3F4A63" }}>{j.company} · {j.location} · {j.type}</div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Chip tone="low">{j.source}</Chip>
                   {j.tags.slice(0, 3).map((t) => <Chip key={t} tone="info">{t}</Chip>)}
                 </div>
                 <div className="flex gap-2">
@@ -310,7 +309,7 @@ export default function JobsPage() {
       )}
       {cachedNote && jobs.length > 0 && !busy && (
         <div className="mt-3 rounded-[10px] px-3.5 py-2.5 text-[12.5px] font-medium" style={{ background: "#E6F7EE", color: "#0B7A55" }}>
-          Served from your saved results — zero AI tokens spent. Change the JD or skills to recompute.
+          Loaded from your saved results. Change the JD or skills to recompute.
         </div>
       )}
     </AppShell>

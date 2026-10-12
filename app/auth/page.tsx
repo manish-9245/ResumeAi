@@ -66,7 +66,7 @@ function AuthForm() {
             Your career data,<br />yours alone.
           </h1>
           <p className="max-w-[46ch] text-[15px] leading-7" style={{ color: "#3F4A63" }}>
-            One account = one isolated workspace. Resumes, matches, roadmaps and quizzes are fenced per user by Supabase row-level security — nobody else can read them.
+            One account = one isolated workspace. Resumes, matches, roadmaps and quizzes are fenced per account — nobody else can read them.
           </p>
           <div className="grid gap-2.5">
             {["Private by default — RLS on every table", "Scores are guidance, never hiring verdicts", "Delete anytime — Reset data wipes your slice"].map((t) => (
@@ -74,7 +74,7 @@ function AuthForm() {
             ))}
           </div>
         </div>
-        <div className="font-data text-[11px] tracking-[.14em]" style={{ color: "#7A86A3" }}>SUPABASE AUTH · ROW-LEVEL SECURITY</div>
+        <div className="font-data text-[11px] tracking-[.14em]" style={{ color: "#7A86A3" }}>SECURE SIGN-IN · PRIVATE BY DEFAULT</div>
       </div>
 
       {/* Form panel */}
