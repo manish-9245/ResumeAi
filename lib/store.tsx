@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ChatMsg, JobMatch, ParsedProfile, QuizQ } from "./types";
+import { cleanName } from "./analysis";
 import { useAuth } from "./auth";
 
 export interface ChatSession {
@@ -126,7 +127,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(keyFor(user?.id ?? null));
       if (raw) {
         const s = JSON.parse(raw);
-        setProfile(s.profile ?? null);
+        // One-time hygiene: names parsed before cleanName may hold header junk.
+        const storedProfile = (s.profile ?? null) as ParsedProfile | null;
+        if (storedProfile) storedProfile.name = cleanName(storedProfile.name || "") || "Candidate";
+        setProfile(storedProfile);
         setResumeText(s.resumeText ?? "");
         setFullHealth(s.fullHealth ?? null);
         setJobsState(s.jobs ?? []);

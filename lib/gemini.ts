@@ -4,6 +4,7 @@ import {
   parseResumeText, recommendRoles, scoreHealth,
 } from "./analysis";
 import { normalizeSkill } from "./skills";
+import { cleanName } from "./analysis";
 import type { ParsedProfile } from "./types";
 
 function hasKey() {
@@ -90,9 +91,10 @@ function mergeProfiles(base: ParsedProfile, llm: LLMProfile | null): ParsedProfi
   const skills = [...new Set([...(llm.skills as string[] ?? []), ...base.skills])];
   const skillLevels: ParsedProfile["skillLevels"] = { ...base.skillLevels };
   for (const s of skills) if (!skillLevels[s]) skillLevels[s] = "beginner";
+  const llmName = cleanName((llm.name as string) || "");
   return {
     ...base,
-    name: (llm.name as string) && (llm.name as string).trim().length >= 2 ? (llm.name as string).trim() : base.name,
+    name: llmName.length >= 2 ? llmName : base.name,
     email: (llm.email as string) || base.email,
     phone: (llm.phone as string) || base.phone || "",
     links: [...new Set([...(llm.links as string[] ?? []), ...(base.links ?? [])])].slice(0, 5),

@@ -123,8 +123,16 @@ export default function AssistantPage() {
     "What should I learn first and what project proves it?",
   ];
 
+  const first = (profile?.name ?? "").split(" ")[0] || "there";
+  const skillBit = !profile ? "" : profile.skills.length === 0
+    ? "no skills mapped yet"
+    : `${profile.skills.length} skill${profile.skills.length === 1 ? "" : "s"} mapped`;
+  const jobBit = jobs.length === 0
+    ? "no comparisons yet"
+    : `${jobs.length} job${jobs.length === 1 ? "" : "s"} compared`;
+
   return (
-    <AppShell requireAuth title="Career assistant" sub={profile ? `Grounded in ${profile.name}'s parsed profile (${profile.skills.slice(0, 5).join(", ") || "no skills"}${jobs.length ? `, ${jobs.length} job(s) compared` : ""}). Never invents experience.` : "Upload a resume to make me profile-aware."}>
+    <AppShell requireAuth title="Career assistant" sub={profile ? `Advising ${first} · ${skillBit} · ${jobBit}. Every answer stays inside your resume.` : "Upload a resume to make me profile-aware."}>
       <div className="grid items-start gap-3 lg:grid-cols-[280px_minmax(0,1fr)]">
         {/* Desktop session rail — sticky, self-scrolling, truncation-safe */}
         <aside className="card sticky top-6 hidden max-h-[calc(100dvh-3rem)] min-w-0 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden p-3 lg:grid" aria-label="Chat sessions">

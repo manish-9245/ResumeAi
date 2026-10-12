@@ -74,8 +74,22 @@ function splitSections(lines: string[]): { sections: Partial<Record<string, stri
   return { sections, header };
 }
 
-function detectName(lines: string[], header: string[]): string {
-  const bad = /resume|curriculum|vitae|biodata|phone|mobile|email|address|linkedin|github|objective/i;
+/** Strip header junk (emails, phones, links, separators) so a name is just a name. */
+export function cleanName(raw: string): string {
+  return raw
+    .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, " ")
+    .replace(/(\+?\d[\d\s-]{7,}\d)/g, " ")
+    .replace(/(linkedin\.com\S*|github\.com\S*|[\w-]+\.(dev|io|app|me)\S*)/gi, " ")
+    .replace(/\blinkedin\b|\bgithub\b/gi, " ")
+    .replace(/[#|•·▪|]/g, " ")
+    .replace(/\b(resume|curriculum|vitae|biodata)\b/gi, " ")
+    .replace(/(^|\s)[^\w\s](\s|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 60);
+}
+
+function detectName(lines: string[], header: string[]): string {  const bad = /resume|curriculum|vitae|biodata|phone|mobile|email|address|linkedin|github|objective/i;
   for (const line of [...header, ...lines.slice(0, 8)]) {
     const clean = line.replace(/[|•·▪-]/g, " ").replace(/\s+/g, " ").trim();
     const words = clean.split(" ").filter(Boolean);
@@ -143,7 +157,7 @@ export function parseResumeText(text: string): ParsedProfile {
   const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
   const { sections, header } = splitSections(lines);
   const { email, phone, links } = detectContacts(text);
-  const name = detectName(lines, header);
+  const name = cleanName(detectName(lines, header)) || "Candidate";
 
   // Explicit skills section (authoritative) ∪ whole-document detection (safety net).
   const listed = skillsFromSection(sections.skills ?? []);
