@@ -34,7 +34,12 @@ const mem = new Map<string, { at: number; data: unknown }>();
 
 export async function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T> {
   const hit = mem.get(key);
-  if (hit && Date.now() - hit.at < ttlMs) return hit.data as T;
+  if (hit && Date.now() - hit.at < ttlMs) {
+    // LRU touch: reused keys stay, idle keys age out first.
+    mem.delete(key);
+    mem.set(key, hit);
+    return hit.data as T;
+  }
   const data = await fn();
   mem.set(key, { at: Date.now(), data });
   if (mem.size > 500) mem.delete(mem.keys().next().value as string);
@@ -43,6 +48,29 @@ export async function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>
 
 export function bust(prefix: string) {
   for (const k of mem.keys()) if (k.startsWith(prefix)) mem.delete(k);
+}
+
+// ---- Eviction: cap stored rows per user so a new scan replaces old state
+// instead of piling up. Best-effort — saves have already succeeded.
+/** Keep the newest `keep` rows of `tbl` for this user (RLS-scoped), delete the rest. */
+async function evictBeyondCap(sb: SB, tbl: string, userId: string, keep: number, idCol = "id"): Promise<void> {
+  try {
+    const t = await table(sb);
+    const sel = t.from(tbl).select(idCol) as unknown as {
+      eq: (c: string, v: unknown) => {
+        order: (c: string, o?: { ascending?: boolean }) => {
+          range: (a: number, b: number) => Promise<{ data: Record<string, string>[] | null }>;
+        };
+      };
+    };
+    const { data } = await sel.eq("user_id", userId).order("created_at", { ascending: false }).range(keep, keep + 99);
+    const ids = (data ?? []).map((r) => r[idCol]).filter(Boolean);
+    if (!ids.length) return;
+    const del = (t.from(tbl) as unknown as {
+      delete: () => { eq: (c: string, v: unknown) => { in: (c: string, v: unknown[]) => Promise<unknown> } };
+    }).delete();
+    await del.eq("user_id", userId).in(idCol, ids);
+  } catch { /* eviction is hygiene, never a save failure */ }
 }
 
 type Row = Record<string, unknown>;
@@ -90,6 +118,7 @@ export async function saveAnalysis(userId: string, sb: SB, row: { resume_hash: s
       { onConflict: "user_id,resume_hash" }
     );
     bust(`an:${userId}:`);
+    await evictBeyondCap(sb, "analyses", userId, 20);
     return (data?.[0]?.id as string) ?? null;
   } catch { return null; }
 }
@@ -113,6 +142,7 @@ export async function saveMatch(userId: string, sb: SB, row: { title: string; co
     const { data } = await ins.select("id");
     bust(`jm:${userId}:`);
     bust(`hist:${userId}:matches`);
+    await evictBeyondCap(sb, "job_matches", userId, 30);
     return (data?.[0]?.id as string) ?? null;
   } catch { return null; }
 }
@@ -147,6 +177,7 @@ export async function saveRoadmap(userId: string, sb: SB, row: { job_match_id: s
     const { data } = await ins.select("id");
     bust(`rm:${userId}:`);
     bust(`hist:${userId}:roadmaps`);
+    await evictBeyondCap(sb, "roadmaps", userId, 30);
     return (data?.[0]?.id as string) ?? null;
   } catch { return null; }
 }
@@ -242,6 +273,7 @@ export async function saveQuizAttempt(userId: string, sb: SB, row: { topics: unk
     const ins = t.from("quiz_attempts").insert({ user_id: userId, ...row });
     const { data } = await ins.select("id");
     bust(`hist:${userId}:attempts`);
+    await evictBeyondCap(sb, "quiz_attempts", userId, 30);
     return (data?.[0]?.id as string) ?? null;
   } catch { return null; }
 }
@@ -274,6 +306,7 @@ export async function aiCacheSet(userId: string, sb: SB, key: string, value: unk
     const t = await table(sb);
     await t.from("ai_cache").upsert({ user_id: userId, key, value }, { onConflict: "user_id,key" });
     bust(`ac:${userId}:${key}`);
+    await evictBeyondCap(sb, "ai_cache", userId, 50, "key");
   } catch {}
 }
 

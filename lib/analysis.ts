@@ -9,6 +9,9 @@ import {
 } from "./types";
 import { countMentions, extractJDKeywords, extractSkillsFromText, normalizeSkill } from "./skills";
 
+/** Bump when parser caps/shape change so hash-deduped caches never serve stale rows. */
+export const PARSER_VERSION = 2;
+
 const WHY: Record<string, string> = {
   javascript: "Core language for web roles — JDs screen for it first.",
   typescript: "Type-safety signal for production frontend teams.",
@@ -110,7 +113,7 @@ function detectContacts(text: string): { email: string; phone: string; links: st
   const linkSet = new Set<string>();
   const linkRe = /(github\.com\/[\w.-]+|linkedin\.com\/in\/[\w.-]+|[\w-]+\.(dev|io|app|me)(?:\/[\w./-]*)?|[\w-]+\.vercel\.app|[\w-]+\.netlify\.app|[\w-]+\.github\.io)/gi;
   for (const m of text.matchAll(linkRe)) linkSet.add(m[0].toLowerCase().replace(/\/$/, ""));
-  return { email, phone, links: [...linkSet].slice(0, 5) };
+  return { email, phone, links: [...linkSet].slice(0, 8) };
 }
 
 const BULLET_LEAD = /^[•·▪‣○◦▸►»\-–—*]\s+/;

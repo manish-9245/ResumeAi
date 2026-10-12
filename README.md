@@ -178,8 +178,8 @@ Notes:
 |---|---|
 | Resume parsing | `pdfjs-dist` runs **in the browser** — no Affinda/Textkernel per-resume fees. Visual lines are rebuilt from glyph coordinates (baseline grouping ±3pt), so multi-column resumes don't interleave |
 | Embeddings / vector DB | Skipped entirely. A 20-skill canonical taxonomy with **word-boundary regex** matching (`ts`≠sports, `ml`≠html, `api`≠rapid, `go`≠ongoing) plus a short-token rule (1–2 letter tokens need skills-section context or 2+ mentions) beats naive substring search for free |
-| LLM tokens | **Content-hash dedupe**: identical resume → stored analysis, identical skills+JD → stored match + strategy, identical profile → stored wording rewrite. Repeats cost 0 tokens and the UI badges it (`SERVED FROM CACHE · 0 TOKENS`) |
-| DB reads | In-process TTL cache (45s–10min) on row fetches and history lists; writes bust their key prefixes. History via one cached endpoint (`/api/history?kind=`) |
+| LLM tokens | **Content-hash dedupe**: identical resume → stored analysis, identical skills+JD → stored match + strategy, identical profile → stored wording rewrite. Repeats cost 0 tokens and the UI badges it (`SERVED FROM CACHE · 0 TOKENS`). Analyze hashes are parser-versioned, so cap/shape changes can never serve stale rows |
+| DB reads | In-process TTL cache (45s–10min, LRU, 500-entry cap) on row fetches and history lists; writes bust their key prefixes. History via one cached endpoint (`/api/history?kind=`). Per-user eviction caps keep tables bounded: 20 analyses, 30 matches/roadmaps/attempts, 50 AI-cache keys, 20 chats — a new scan replaces previous UI state (matches, quiz, verified counts reset; chats kept as history) |
 | Job listings | Remotive (per-skill search) + Arbeitnow (bulk, filtered locally) — both free, no keys, fetched server-side with a 10-min cache |
 | Hosting/auth/data | Vercel Hobby + Supabase free + Gemini AI Studio free tier (this repo defaults to the `gemini-flash-latest` alias so retired version pins can't 404 you — override with `GEMINI_MODEL`) |
 

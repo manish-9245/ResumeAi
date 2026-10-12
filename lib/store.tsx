@@ -267,6 +267,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     avgMatch: jobs.length ? Math.round(jobs.reduce((a, j) => a + j.matchScore, 0) / jobs.length) : null,
     setResume: (text, p, h) => {
       setResumeText(text); setProfile(p); setFullHealth(h);
+      // New scan/data replaces previous UI: matches, quiz and verified counts
+      // were derived from the old profile and must not linger. Chats are kept
+      // as conversational history — the assistant reads the new profile next send.
+      setJobsState([]); setQuizState([]); setVerifiedCount(0);
       profileStamp.current = Date.now();
       if (uid) void postJSON("/api/profile", { profile: p, resumeText: text, health: h }).then(() => setCloudSync(true)).catch(() => {});
     },

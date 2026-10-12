@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { aiAnalyze } from "@/lib/gemini";
+import { PARSER_VERSION } from "@/lib/analysis";
 import { authed, findAnalysis, saveAnalysis, sha } from "@/lib/server-db";
 
 export async function POST(req: Request) {
@@ -9,7 +10,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Paste at least a few lines of resume text, or upload a readable PDF." }, { status: 400 });
     }
     const text = resumeText.slice(0, 20000);
-    const hash = sha(text.trim().toLowerCase());
+    // Versioned hash: parser-cap changes must never hit rows stored by older caps.
+    const hash = sha(`v${PARSER_VERSION}:${text.trim().toLowerCase()}`);
 
     // Token saver: identical resume → stored analysis, zero Gemini calls.
     const auth = await authed().catch(() => null);

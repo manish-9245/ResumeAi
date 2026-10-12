@@ -72,12 +72,12 @@ function sanitizeLLMProfile(raw: string): LLMProfile | null {
       name: typeof j.name === "string" ? j.name.slice(0, 60) : undefined,
       email: typeof j.email === "string" && /[\w.+-]+@[\w-]+\.[\w.]+/.test(j.email) ? j.email : undefined,
       phone: typeof j.phone === "string" ? j.phone.slice(0, 25) : undefined,
-      links: strArray(j.links, 5, 200),
+      links: strArray(j.links, 8, 200),
       education: strArray(j.education, 8, 500),
       experience: strArray(j.experience, 10, 2000),
       projects: strArray(j.projects, 10, 2000),
       certifications: strArray(j.certifications, 8, 500),
-      skills: strArray(j.skills, 20, 30).map(normalizeSkill),
+      skills: strArray(j.skills, 30, 30).map(normalizeSkill),
       summary: typeof j.summary === "string" ? j.summary.slice(0, 300) : undefined,
     };
   } catch {
@@ -97,7 +97,7 @@ function mergeProfiles(base: ParsedProfile, llm: LLMProfile | null): ParsedProfi
     name: llmName.length >= 2 ? llmName : base.name,
     email: (llm.email as string) || base.email,
     phone: (llm.phone as string) || base.phone || "",
-    links: [...new Set([...(llm.links as string[] ?? []), ...(base.links ?? [])])].slice(0, 5),
+    links: [...new Set([...(llm.links as string[] ?? []), ...(base.links ?? [])])].slice(0, 8),
     education: pick(llm.education as string[], base.education),
     experience: pick(llm.experience as string[], base.experience),
     projects: pick(llm.projects as string[], base.projects),
