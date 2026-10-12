@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Outfit } from "next/font/google";
 import { ArrowRight, ArrowUpRight, FileUp, Crosshair, Map, BadgeCheck, MessagesSquare, FlaskConical } from "lucide-react";
 import { PwaInstallButton } from "@/components/pwa";
+import { MobileMenu } from "@/components/mobile-nav";
 import { HeroEnter, ScaleFade, PinSplit, Marquee } from "@/components/landing-motion";
 import { ScoreDial, Chip } from "@/components/shell";
 
@@ -65,6 +66,7 @@ export default function Landing() {
             <Link href="/jobs" className="rounded-full px-3 py-1.5 text-[13px] font-medium hover:bg-black/5">Jobs</Link>
             <Link href="/roadmap" className="rounded-full px-3 py-1.5 text-[13px] font-medium hover:bg-black/5">Roadmap</Link>
           </span>
+          <MobileMenu />
           <PwaInstallButton className="hidden rounded-full border px-3.5 py-1.5 text-[12.5px] font-bold sm:block" style={{ borderColor: "#0E9F6E", background: "#E6F7EE", color: "#0B7A55" }} />
           <Link href="/upload" className="btn-primary rounded-full px-4 py-2 text-[13px]">Analyze resume</Link>
         </nav>
