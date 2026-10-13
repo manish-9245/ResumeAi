@@ -304,27 +304,186 @@ export function improveResume(profile: ParsedProfile): ImproveSuggestion[] {
   return out;
 }
 
-const QUIZ_BANK: Record<string, { q: string; opts: string[]; a: number; e: string }[]> = {
-  javascript: [{ q: "What does `===` check that `==` does not?", opts: ["Value only", "Value + type without coercion", "Reference only", "Nothing"], a: 1, e: "`===` skips type coercion — fewer bugs." }],
-  react: [{ q: "Where should data-fetching side effects live?", opts: ["In render body", "In useEffect / event handlers", "In JSX props", "In CSS"], a: 1, e: "Effects belong in useEffect/handlers, not render." }],
-  python: [{ q: "What is a list comprehension?", opts: ["A loop that builds a list inline", "A dict type", "A test runner", "A server"], a: 0, e: "`[x for x in ...]` builds lists concisely." }],
-  sql: [{ q: "What does JOIN do?", opts: ["Deletes rows", "Combines rows across tables on a key", "Sorts files", "Encrypts data"], a: 1, e: "JOINs relate tables via keys." }],
-  docker: [{ q: "What is a Docker image?", opts: ["A running process", "An immutable template containers start from", "A VM", "A log file"], a: 1, e: "Images are templates; containers are running instances." }],
-  git: [{ q: "What does `git rebase` do?", opts: ["Deletes repo", "Replays commits onto a new base", "Pushes to cloud", "Merges PDFs"], a: 1, e: "Rebase rewrites history onto a new base — keep it clean on shared branches." }],
+type QuizBankItem = { q: string; opts: string[]; a: number; e: string };
+
+const QUIZ_BANK: Record<string, QuizBankItem[]> = {
+  javascript: [
+    { q: "What does `===` check that `==` does not?", opts: ["Value only", "Value + type without coercion", "Reference only", "Nothing"], a: 1, e: "`===` skips type coercion — fewer bugs." },
+    { q: "Why prefer `const`/`let` over `var`?", opts: ["They are faster to type", "Block scope + no hoisting surprises", "They work without declaring", "They allow redeclaration everywhere"], a: 1, e: "`let`/`const` are block-scoped; `var` hoists and leaks." },
+    { q: "What does `Array.map()` return?", opts: ["A new array with transformed items", "Nothing — it mutates in place", "The first matching item", "A boolean"], a: 0, e: "`map` builds a new array; use it for transforms." },
+  ],
+  typescript: [
+    { q: "What does `unknown` give you over `any`?", opts: ["Nothing — they are identical", "Type-safety: you must narrow before use", "Faster compilation", "Automatic runtime checks"], a: 1, e: "`unknown` forces narrowing; `any` disables checking." },
+    { q: "What is an interface for?", opts: ["Styling components", "Describing the shape of an object type", "Running code faster", "Deploying apps"], a: 1, e: "Interfaces declare object shapes the compiler enforces." },
+    { q: "What breaks under `strict` null checks?", opts: ["Assigning `null` where a value is required", "Using functions", "Importing modules", "Adding comments"], a: 0, e: "Strict mode surfaces null/undefined bugs at compile time." },
+  ],
+  react: [
+    { q: "Where should data-fetching side effects live?", opts: ["In render body", "In useEffect / event handlers", "In JSX props", "In CSS"], a: 1, e: "Effects belong in useEffect/handlers, not render." },
+    { q: "Why do list items need a stable `key`?", opts: ["For styling", "So React can reconcile the right rows on updates", "To make them clickable", "Keys are optional metadata"], a: 1, e: "Keys let React match rows across renders." },
+    { q: "What is the rule for hooks?", opts: ["Call them inside loops only", "Call at top level, never conditionally", "Call them in event handlers only", "No rules"], a: 1, e: "Hooks must run in the same order every render." },
+  ],
+  "node.js": [
+    { q: "Why is Node.js good for I/O-heavy APIs?", opts: ["It blocks on every request", "Non-blocking event loop handles concurrent I/O", "It runs only one request per day", "It needs no JavaScript"], a: 1, e: "The event loop overlaps I/O instead of blocking threads." },
+    { q: "What is Express middleware?", opts: ["A CSS framework", "A function that processes req/res in a chain", "A database", "A test runner"], a: 1, e: "Middleware runs in order: auth, parse, handle, respond." },
+    { q: "How should you read a file without blocking?", opts: ["`fs.readFileSync` everywhere", "`fs.promises.readFile` / async APIs", "Copy-paste the file", "Restart the server"], a: 1, e: "Async fs APIs keep the loop free for other requests." },
+  ],
+  python: [
+    { q: "What is a list comprehension?", opts: ["A loop that builds a list inline", "A dict type", "A test runner", "A server"], a: 0, e: "`[x for x in ...]` builds lists concisely." },
+    { q: "What does a virtualenv solve?", opts: ["Slow internet", "Isolated dependency versions per project", "Bad syntax", "Missing RAM"], a: 1, e: "One project should never break another's packages." },
+    { q: "What is `None`?", opts: ["The absence of a value", "Zero", "An empty string", "An error code"], a: 0, e: "`None` means no value — check with `is None`." },
+  ],
+  java: [
+    { q: "What does the JVM do?", opts: ["Edits images", "Runs bytecode portably across platforms", "Designs UIs", "Sends emails"], a: 1, e: "Compile once, run on any JVM." },
+    { q: "`static` vs instance method?", opts: ["No difference", "`static` belongs to the class, instance belongs to an object", "`static` is slower", "Instance methods can't use objects"], a: 1, e: "`static` needs no object; instance methods do." },
+    { q: "How should checked exceptions be handled?", opts: ["Ignore them silently", "Catch or declare with try/catch or `throws`", "Delete the code", "Restart the IDE"], a: 1, e: "Java forces you to plan for failure paths." },
+  ],
+  "c++": [
+    { q: "What is a pointer?", opts: ["A variable holding a memory address", "A UI element", "A loop type", "A compiler flag"], a: 0, e: "Pointers reference memory directly — handle with care." },
+    { q: "Why prefer `std::vector` over raw arrays?", opts: ["It is older", "Dynamic size + bounds-checked access", "It uses less memory always", "It skips compilation"], a: 1, e: "`vector` grows safely; raw arrays don't." },
+    { q: "What is a reference (`int&`)?", opts: ["An alias to an existing variable", "A copy of data", "A file path", "A comment"], a: 0, e: "References alias without copying or null." },
+  ],
+  go: [
+    { q: "What is a goroutine?", opts: ["A lightweight concurrent function", "A database table", "A CSS class", "A test file"], a: 0, e: "`go f()` runs concurrently with tiny overhead." },
+    { q: "How do goroutines usually communicate?", opts: ["Global variables only", "Channels", "Email", "Screenshots"], a: 1, e: "`chan` passes data safely between goroutines." },
+    { q: "What does `defer` do?", opts: ["Deletes code", "Schedules a call to run when the function returns", "Speeds up loops", "Imports packages"], a: 1, e: "`defer` is ideal for cleanup like closing files." },
+  ],
+  rust: [
+    { q: "What is ownership in Rust?", opts: ["Each value has one owner; dropping frees it", "Anyone can free anything", "Memory never frees", "Variables can't be used"], a: 0, e: "Ownership + borrowing prevent use-after-free at compile time." },
+    { q: "What does `Result<T, E>` express?", opts: ["A number range", "Success (`Ok`) or failure (`Err`) explicitly", "A loop", "A string"], a: 1, e: "Rust makes errors values you must handle." },
+    { q: "What does `mut` allow?", opts: ["Deleting files", "Mutating a binding", "Faster Wi-Fi", "Skipping tests"], a: 1, e: "Bindings are immutable unless marked `mut`." },
+  ],
+  sql: [
+    { q: "What does JOIN do?", opts: ["Deletes rows", "Combines rows across tables on a key", "Sorts files", "Encrypts data"], a: 1, e: "JOINs relate tables via keys." },
+    { q: "WHERE vs HAVING?", opts: ["They are identical", "WHERE filters rows, HAVING filters groups after GROUP BY", "HAVING sorts output", "WHERE deletes tables"], a: 1, e: "Filter rows with WHERE, grouped results with HAVING." },
+    { q: "What does a PRIMARY KEY guarantee?", opts: ["Nullable duplicates", "Unique, non-null row identity", "Faster typing", "Auto-deletion"], a: 1, e: "Primary keys uniquely identify every row." },
+  ],
+  git: [
+    { q: "What does `git rebase` do?", opts: ["Deletes repo", "Replays commits onto a new base", "Pushes to cloud", "Merges PDFs"], a: 1, e: "Rebase rewrites history onto a new base — keep it clean on shared branches." },
+    { q: "You have a merge conflict — what happened?", opts: ["Two branches changed the same lines", "The repo was deleted", "Wi-Fi dropped", "GitHub is down"], a: 0, e: "Resolve the marked hunks, then commit." },
+    { q: "What does `git pull` do?", opts: ["Deletes local work", "Fetches + merges remote changes", "Creates a repo", "Formats code"], a: 1, e: "`pull` = `fetch` + `merge` for the current branch." },
+  ],
+  docker: [
+    { q: "What is a Docker image?", opts: ["A running process", "An immutable template containers start from", "A VM", "A log file"], a: 1, e: "Images are templates; containers are running instances." },
+    { q: "What does a Dockerfile describe?", opts: ["Meeting notes", "Reproducible steps to build an image", "A resume", "A database schema"], a: 1, e: "Dockerfiles make builds repeatable anywhere." },
+    { q: "Why map ports (`-p 3000:3000`)?", opts: ["To delete containers", "To expose container ports on the host", "To speed up builds", "To encrypt code"], a: 1, e: "Without mapping, the app stays unreachable outside." },
+  ],
+  aws: [
+    { q: "EC2 vs S3?", opts: ["Both are databases", "EC2 is compute, S3 is object storage", "Both are DNS", "S3 runs servers"], a: 1, e: "Run code on EC2, store files/blobs on S3." },
+    { q: "What does IAM control?", opts: ["Image editing", "Who can do what on which resources", "Internet speed", "Code formatting"], a: 1, e: "Least-privilege IAM roles limit blast radius." },
+    { q: "Why deploy in the nearest region?", opts: ["Lower latency + data residency", "It looks nicer", "Regions don't matter", "To use more servers"], a: 0, e: "Proximity cuts latency; regions affect compliance." },
+  ],
+  linux: [
+    { q: "What does `chmod +x` do?", opts: ["Deletes a file", "Makes a file executable", "Compresses folders", "Prints logs"], a: 1, e: "Scripts need the execute bit to run directly." },
+    { q: "What does `grep` do?", opts: ["Edits videos", "Searches text by pattern", "Installs apps", "Reboots"], a: 1, e: "`grep -r` finds needles in codebases fast." },
+    { q: "What does a pipe (`|`) do?", opts: ["Deletes output", "Feeds one command's output into the next", "Creates files", "Opens a browser"], a: 1, e: "Pipes compose small tools into pipelines." },
+  ],
+  "machine learning": [
+    { q: "Why split train vs test data?", opts: ["To use more disk", "To measure generalization on unseen data", "To slow training", "It is optional decoration"], a: 1, e: "Test scores reveal overfitting training scores hide." },
+    { q: "What is overfitting?", opts: ["Model memorizes noise, fails on new data", "Model trains too fast", "Too little data loading", "Using GPUs"], a: 0, e: "Regularize, validate, and prefer simpler models first." },
+    { q: "Features vs labels?", opts: ["Both are outputs", "Features are inputs, labels are targets to predict", "Labels are inputs", "No difference"], a: 1, e: "Models learn label = f(features)." },
+  ],
+  "data analysis": [
+    { q: "What is a pandas DataFrame?", opts: ["A 2D labeled table for analysis", "A chart image", "A database server", "A text file"], a: 0, e: "DataFrames pair rows/columns with labeled ops." },
+    { q: "Mean vs median with outliers?", opts: ["Mean is always robust", "Median resists extreme outliers", "Both ignore data", "Neither is numeric"], a: 1, e: "One billionaire skews the mean, not the median." },
+    { q: "First step with nulls?", opts: ["Delete everything", "Profile missingness, then impute/drop deliberately", "Ignore them", "Ship anyway"], a: 1, e: "Measure the gap before you fill or drop it." },
+  ],
+  figma: [
+    { q: "Why use components?", opts: ["They look fancy", "Reusable instances stay in sync", "They export code", "They delete layers"], a: 1, e: "Edit the master, update every instance." },
+    { q: "Frames vs groups?", opts: ["Identical", "Frames add layout/constraints, groups just cluster", "Groups are responsive", "Frames can't nest"], a: 1, e: "Use frames for screens + auto-layout." },
+    { q: "What is auto-layout for?", opts: ["Random placement", "Responsive padding/spacing that adapts", "Deleting styles", "Printing"], a: 1, e: "Auto-layout mimics flexbox inside designs." },
+  ],
+  communication: [
+    { q: "What is active listening in a team?", opts: ["Waiting to speak", "Paraphrasing + confirming before reacting", "Multitasking in meetings", "Avoiding questions"], a: 1, e: "Reflect-back confirms you actually understood." },
+    { q: "A good standup update includes?", opts: ["Life story", "Done / doing / blocked, briefly", "Complaints only", "No blockers ever"], a: 1, e: "Short + blocked-first unblocks the team." },
+    { q: "Why write things down?", opts: ["To waste time", "Shared memory beats hallway decisions", "Docs are never read", "Chat is enough"], a: 1, e: "Decisions in writing survive turnover." },
+  ],
+  dsa: [
+    { q: "What is Big-O?", opts: ["Exact runtime in seconds", "How cost grows with input size", "A sorting algorithm", "Memory brand"], a: 1, e: "O(n) vs O(n²) decides what scales." },
+    { q: "Stack vs queue?", opts: ["Both are LIFO", "Stack is LIFO, queue is FIFO", "Both are FIFO", "Neither orders data"], a: 1, e: "Undo = stack; tasks = queue." },
+    { q: "When does binary search work?", opts: ["On any list", "Only on sorted data", "Only on strings", "Never"], a: 1, e: "Sorted order enables O(log n) halving." },
+  ],
+  testing: [
+    { q: "Unit vs integration test?", opts: ["Same thing", "Unit isolates one piece; integration checks them together", "Integration is always faster", "Units test UIs only"], a: 1, e: "Units catch logic bugs; integration catches wiring bugs." },
+    { q: "What is a mock for?", opts: ["Making fun of code", "Replacing a dependency with a controlled stand-in", "Deleting tests", "Speeding up Wi-Fi"], a: 1, e: "Mocks isolate the unit from flaky deps." },
+    { q: "When do regression tests pay off?", opts: ["Never", "When a fix or feature breaks something that used to work", "Only on day one", "When deleting the repo"], a: 1, e: "They guard shipped behavior from re-breaking." },
+  ],
+  "system design": [
+    { q: "What does a load balancer do?", opts: ["Stores passwords", "Spreads traffic across healthy servers", "Writes code", "Deletes caches"], a: 1, e: "Balancing removes single-server bottlenecks." },
+    { q: "Why add a cache?", opts: ["To slow responses", "Serve hot reads fast, reduce DB load", "To delete data", "Caches are decoration"], a: 1, e: "Cache reads like sessions/feeds at the edge." },
+    { q: "What is stateless REST?", opts: ["Server remembers everything", "Each request carries its own context", "No HTTP allowed", "Only one client"], a: 1, e: "Stateless servers scale horizontally easily." },
+  ],
+  html: [
+    { q: "Why use semantic tags (`<header>`, `<main>`)?", opts: ["They load faster magically", "Meaning + accessibility for readers/AT", "They add colors", "They replace CSS"], a: 1, e: "Semantics help screen readers and SEO." },
+    { q: "Why pair `<label>` with inputs?", opts: ["Decoration", "Click targets + screen-reader names", "Validation", "Styling only"], a: 1, e: "Labels make forms usable for everyone." },
+    { q: "What does the viewport meta tag do?", opts: ["Deletes mobile styles", "Makes layouts scale correctly on mobile", "Adds cookies", "Blocks zoom"], a: 1, e: "Without it, mobile renders a shrunken desktop page." },
+  ],
 };
 
-export function buildQuiz(skills: string[], n = 6): QuizQ[] {
-  const out: QuizQ[] = [];
-  const pool = skills.length ? skills : ["javascript", "react", "sql"];
-  let i = 0;
-  while (out.length < n && i < n * 3) {
-    const skill = pool[i % pool.length];
-    const bank = QUIZ_BANK[skill] ?? [{ q: `What is the primary use of ${skill}?`, opts: [`Core ${skill} use-case`, "Unrelated A", "Unrelated B", "Unrelated C"], a: 0, e: `Shows working knowledge of ${skill}.` }];
-    const b = bank[0];
-    out.push({ id: `q${i}`, skill, question: b.q, options: b.opts, answer: b.a, explain: b.e });
-    i++;
+/** Generic-but-distinct fallback so ANY skill (incl. custom ones) can fill up to 10/skill without repeats. */
+function fallbackBankFor(skill: string): QuizBankItem[] {
+  const S = skill;
+  return [
+    { q: `What is the primary use of ${S}?`, opts: [`Core ${S} use-case in real projects`, "Unrelated office task", "Unrelated design step", "Unrelated networking chore"], a: 0, e: `Shows working knowledge of ${S}.` },
+    { q: `Which is a best practice when working with ${S}?`, opts: ["Copy-paste without understanding", `Follow official ${S} docs + small reproducible setups`, "Skip version control", `Avoid testing ${S} code`], a: 1, e: `Docs-first + versioned setups keep ${S} reliable.` },
+    { q: `What is a common beginner mistake with ${S}?`, opts: [`Skipping ${S} fundamentals and jumping to advanced tricks`, `Reading ${S} docs carefully`, `Practicing ${S} in small steps`, `Asking for code review on ${S}`], a: 0, e: `Nail ${S} basics before advanced patterns.` },
+    { q: `Your ${S} setup fails unexpectedly — what do you check first?`, opts: ["Buy a new laptop", `Versions, error logs, and minimal ${S} repro`, "Delete the project", "Ignore the error"], a: 1, e: `Logs + minimal repro isolate ${S} faults fast.` },
+    { q: `When is ${S} the right choice?`, opts: [`When the task matches ${S} strengths`, "For every possible problem", "Never", "Only when forced"], a: 0, e: `Match the tool to the task — ${S} where it fits.` },
+    { q: `Which companion habit most improves ${S} work?`, opts: ["No backups", `Version control + tests around ${S}`, `Avoiding ${S} docs`, "Working without review"], a: 1, e: `Git + tests make ${S} proof, not claims.` },
+    { q: `Which statement about ${S} is true?`, opts: [`${S} rewards deliberate practice on real tasks`, `${S} is mastered by watching one video`, `${S} needs no practice`, `${S} works without any setup`], a: 0, e: `Shipped ${S} reps beat passive watching.` },
+  ];
+}
+
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return out.slice(0, n);
+  return a;
+}
+
+export function buildQuiz(skills: string[], perSkill = 6): QuizQ[] {
+  // Per-skill semantics: EVERY selected topic gets `perSkill` distinct questions.
+  // Total = topics × perSkill. No repeated question text within one quiz.
+  const norm = [...new Set(
+    (skills.length ? skills : ["javascript", "react", "sql"])
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  )].slice(0, 8);
+  const pool = norm.length ? norm : ["javascript", "react", "sql"];
+  const want = Math.min(10, Math.max(3, Math.floor(perSkill) || 6));
+
+  // 1) Pick `want` distinct questions per skill (hand-written first, fallback fills to 10).
+  const perSkillQs = new Map<string, QuizBankItem[]>();
+  for (const skill of pool) {
+    const full = [...(QUIZ_BANK[skill] ?? []), ...fallbackBankFor(skill)];
+    const seen = new Set<string>();
+    const picked: QuizBankItem[] = [];
+    for (const item of shuffled(full)) {
+      const key = item.q.trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      picked.push(item);
+      if (picked.length >= want) break;
+    }
+    perSkillQs.set(skill, picked);
+  }
+
+  // 2) Interleave round-robin so adjacent questions are different skills.
+  const out: QuizQ[] = [];
+  const seenGlobal = new Set<string>();
+  for (let round = 0; round < want; round++) {
+    for (const skill of shuffled(pool)) {
+      const list = perSkillQs.get(skill) ?? [];
+      const item = list[round];
+      if (!item) continue;
+      const key = item.q.trim().toLowerCase();
+      if (seenGlobal.has(key)) continue;
+      seenGlobal.add(key);
+      out.push({ id: `q${out.length}`, skill, question: item.q, options: item.opts, answer: item.a, explain: item.e });
+    }
+  }
+  return out;
 }
 
 export function recommendRoles(profile: ParsedProfile): { role: string; why: string; lift: string }[] {

@@ -5,7 +5,7 @@ import {
 } from "./analysis";
 import { normalizeSkill } from "./skills";
 import { cleanName } from "./analysis";
-import type { ParsedProfile } from "./types";
+import type { ParsedProfile, QuizQ } from "./types";
 
 function hasKey() {
   return Boolean(process.env.GEMINI_API_KEY);
@@ -23,7 +23,7 @@ function model(name: string) {
 }
 
 /** Try models in order; throw only when all fail. Saves sessions during 503 spikes. */
-async function genText(prompt: string, jsonMode: boolean): Promise<string> {
+async function genText(prompt: string, jsonMode: boolean, opts?: { temperature?: number; maxOutputTokens?: number }): Promise<string> {
   const tried: string[] = [];
   for (const name of [MODEL, ...FALLBACKS.filter((f) => f !== MODEL)]) {
     try {
@@ -31,8 +31,8 @@ async function genText(prompt: string, jsonMode: boolean): Promise<string> {
       const r = await m.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: jsonMode
-          ? { responseMimeType: "application/json", temperature: 0.1, maxOutputTokens: 2048 }
-          : { temperature: 0.4, maxOutputTokens: 1200 },
+          ? { responseMimeType: "application/json", temperature: opts?.temperature ?? 0.1, maxOutputTokens: opts?.maxOutputTokens ?? 2048 }
+          : { temperature: opts?.temperature ?? 0.4, maxOutputTokens: opts?.maxOutputTokens ?? 1200 },
       });
       return r.response.text();
     } catch (e) {
@@ -147,8 +147,109 @@ export async function aiRoadmap(profile: ParsedProfile, gaps: { skill: string; s
   return { steps };
 }
 
-export async function aiQuiz(skills: string[], count = 6) {
-  return { questions: buildQuiz(skills, count) };
+function sanitizeQuizItems(raw: string, skill: string): Omit<QuizQ, "id">[] {
+  try {
+    const j = JSON.parse(raw) as { questions?: unknown } | unknown[];
+    const arr = Array.isArray(j)
+      ? j
+      : Array.isArray((j as { questions?: unknown }).questions)
+        ? (j as { questions: unknown[] }).questions
+        : [];
+    const seen = new Set<string>();
+    const out: Omit<QuizQ, "id">[] = [];
+    for (const r of arr) {
+      if (!r || typeof r !== "object") continue;
+      const rec = r as Record<string, unknown>;
+      const question = String(rec.question ?? "").replace(/\s+/g, " ").trim().slice(0, 300);
+      const opts = Array.isArray(rec.options)
+        ? (rec.options as unknown[]).map((o) => String(o ?? "").replace(/\s+/g, " ").trim().slice(0, 150))
+        : [];
+      const answer = Number(rec.answer);
+      const explain = String(rec.explain ?? rec.explanation ?? "").replace(/\s+/g, " ").trim().slice(0, 300)
+        || `Tests practical ${skill} knowledge.`;
+      if (question.length < 12) continue;
+      if (opts.length !== 4 || opts.some((o) => o.length < 1)) continue;
+      if (!Number.isInteger(answer) || answer < 0 || answer > 3) continue;
+      if (new Set(opts.map((o) => o.toLowerCase())).size !== 4) continue;
+      const key = question.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ skill, question, options: opts, answer, explain });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+async function genQuizForSkill(skill: string, want: number): Promise<Omit<QuizQ, "id">[]> {
+  const seed = Math.random().toString(36).slice(2, 8);
+  const text = await genText(
+    `${GUARD}\nYou are a technical interviewer for Indian college students. Write ${want} DISTINCT beginner-to-intermediate multiple-choice questions testing practical ${skill} knowledge for internships.\nRules:\n- Every question strictly about ${skill}, nothing else.\n- All ${want} questions mutually distinct — different subtopics/angles, never paraphrase repeats.\n- 4 options each, exactly one correct, plausible distractors, VARY the correct position across questions (not always A).\n- Keep question <= 28 words, each option <= 12 words, explain <= 22 words (why the answer is right).\n- Variation seed ${seed} — pick different angles than the obvious textbook set.\nReturn ONLY JSON: {"questions":[{"question":string,"options":[string,string,string,string],"answer":0,"explain":string}]}`,
+    true,
+    { temperature: 0.9, maxOutputTokens: 3000 }
+  );
+  return sanitizeQuizItems(text, skill);
+}
+
+/** Dynamic per-skill quiz: `perSkill` FRESH questions for EVERY topic. Gemini first, local bank fills any shortfall. */
+export async function aiQuiz(skills: string[], perSkill = 6) {
+  const norm = [...new Set(
+    (skills.length ? skills : ["javascript", "react", "sql"]).map((s) => s.trim().toLowerCase()).filter(Boolean)
+  )].slice(0, 8);
+  const pool = norm.length ? norm : ["javascript", "react", "sql"];
+  const want = Math.min(10, Math.max(3, Math.floor(perSkill) || 6));
+  const fallback = () => ({ questions: buildQuiz(pool, want), dynamic: false as const });
+
+  if (!hasKey()) return fallback();
+  try {
+    const settled = await Promise.allSettled(pool.map((s) => genQuizForSkill(s, want)));
+    const perSkillLists = new Map<string, Omit<QuizQ, "id">[]>();
+    const seenGlobal = new Set<string>();
+    pool.forEach((skill, i) => {
+      const got = settled[i].status === "fulfilled"
+        ? (settled[i] as PromiseFulfilledResult<Omit<QuizQ, "id">[]>).value
+        : [];
+      const kept: Omit<QuizQ, "id">[] = [];
+      for (const q of got) {
+        const key = q.question.trim().toLowerCase();
+        if (seenGlobal.has(key)) continue;
+        seenGlobal.add(key);
+        kept.push(q);
+        if (kept.length >= want) break;
+      }
+      perSkillLists.set(skill, kept);
+    });
+
+    // Fill any shortfall per skill from the local bank (never repeating seen text).
+    for (const skill of pool) {
+      const have = perSkillLists.get(skill) ?? [];
+      if (have.length >= want) continue;
+      const local = buildQuiz([skill], want);
+      for (const q of local) {
+        const key = q.question.trim().toLowerCase();
+        if (seenGlobal.has(key)) continue;
+        seenGlobal.add(key);
+        have.push({ skill, question: q.question, options: q.options, answer: q.answer, explain: q.explain });
+        if (have.length >= want) break;
+      }
+      perSkillLists.set(skill, have);
+    }
+
+    // Interleave round-robin so adjacent questions are different skills.
+    const order = [...pool].sort(() => Math.random() - 0.5);
+    const out: QuizQ[] = [];
+    for (let round = 0; round < want; round++) {
+      for (const skill of order) {
+        const item = perSkillLists.get(skill)?.[round];
+        if (item) out.push({ ...item, id: `q${out.length}` });
+      }
+    }
+    if (!out.length) return fallback();
+    return { questions: out, dynamic: true as const };
+  } catch {
+    return fallback();
+  }
 }
 
 export async function aiImprove(profile: ParsedProfile) {

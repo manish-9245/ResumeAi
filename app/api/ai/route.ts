@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       }
       return NextResponse.json({ ...r, roadmapId, cached: false });
     }
-    if (kind === "quiz") return NextResponse.json(await aiQuiz(body.skills ?? [], Math.min(12, Math.max(3, Number(body.count) || 6))));
+    if (kind === "quiz") return NextResponse.json(await aiQuiz(body.skills ?? [], Math.min(10, Math.max(3, Number(body.count) || 6))));
     if (kind === "improve") {
       const sig = sha(JSON.stringify({ s: (body.profile?.skills ?? []).sort(), p: (body.profile?.projects ?? []).slice(0, 2) }));
       const auth = await authed().catch(() => null);

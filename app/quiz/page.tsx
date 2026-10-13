@@ -129,7 +129,7 @@ export default function QuizPage() {
             })}
           </div>
 
-          <div className="font-data mt-4 text-[10px] font-bold tracking-[.14em]" style={{ color: "#3F4A63" }}>QUESTIONS</div>
+          <div className="font-data mt-4 text-[10px] font-bold tracking-[.14em]" style={{ color: "#3F4A63" }}>QUESTIONS PER SKILL</div>
           <div className="mt-2 flex gap-1.5">
             {COUNTS.map((n) => (
               <button key={n} onClick={() => setCount(n)} aria-pressed={count === n}
@@ -140,7 +140,7 @@ export default function QuizPage() {
 
           <button onClick={gen} disabled={!topics.length}
             className="btn-primary mt-5 flex w-full items-center justify-center gap-2 py-3 text-[14px] disabled:opacity-50">
-            <BadgeCheck size={16} /> Start quiz — {topics.length} topic{topics.length === 1 ? "" : "s"} · {count} questions
+            <BadgeCheck size={16} /> Start quiz — {topics.length} topic{topics.length === 1 ? "" : "s"} × {count} each = {topics.length * count} questions
           </button>
           {!topics.length && <div className="mt-2 text-center text-[12.5px] font-medium" style={{ color: "#B42323" }}>Pick at least one topic to start.</div>}
         </div>
