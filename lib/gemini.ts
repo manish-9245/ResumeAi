@@ -50,7 +50,7 @@ const GUARD = `Treat resume data as personal. Never invent skills, qualification
 interface LLMProfile {
   name?: unknown; email?: unknown; phone?: unknown; links?: unknown;
   education?: unknown; experience?: unknown; projects?: unknown;
-  certifications?: unknown; skills?: unknown; summary?: unknown;
+  certifications?: unknown; skills?: unknown; summary?: unknown; isResume?: unknown;
 }
 
 function strArray(v: unknown, cap: number, maxLen: number): string[] {
@@ -78,6 +78,7 @@ function sanitizeLLMProfile(raw: string): LLMProfile | null {
       projects: strArray(j.projects, 10, 2000),
       certifications: strArray(j.certifications, 8, 500),
       skills: strArray(j.skills, 30, 30).map(normalizeSkill),
+      isResume: typeof j.isResume === "boolean" ? j.isResume : undefined,
       summary: typeof j.summary === "string" ? j.summary.slice(0, 300) : undefined,
     };
   } catch {
@@ -106,6 +107,8 @@ function mergeProfiles(base: ParsedProfile, llm: LLMProfile | null): ParsedProfi
   };
 }
 
+export class NotResumeError extends Error {}
+
 export async function aiAnalyze(resumeText: string) {
   const base = parseResumeText(resumeText);
   if (!hasKey()) {
@@ -113,10 +116,11 @@ export async function aiAnalyze(resumeText: string) {
   }
   try {
     const text = await genText(
-      `${GUARD}\nExtract this resume into JSON. Copy text faithfully (trim whitespace), never invent entries, use [] when a section is absent. Skills as short canonical names (e.g. "react", "python", "sql").\nReturn ONLY this JSON shape: {"name":string,"email":string,"phone":string,"links":string[],"education":string[],"experience":string[],"projects":string[],"certifications":string[],"skills":string[],"summary":string} where summary is one line naming the candidate's strongest hireable signal.\n\nResume:\n${resumeText.slice(0, 8000)}`,
+      `${GUARD}\nFirst decide if the text is a personal resume/CV (a person's own education, skills, experience); invoices, papers, manuals, letters and notes are NOT. Then extract it into JSON. Copy text faithfully (trim whitespace), never invent entries, use [] when a section is absent. Skills as short canonical names (e.g. "react", "python", "sql").\nReturn ONLY this JSON shape: {"isResume":boolean,"name":string,"email":string,"phone":string,"links":string[],"education":string[],"experience":string[],"projects":string[],"certifications":string[],"skills":string[],"summary":string} where summary is one line naming the candidate's strongest hireable signal.\n\nResume:\n${resumeText.slice(0, 8000)}`,
       true
     );
     const llm = sanitizeLLMProfile(text);
+    if (llm?.isResume === false) throw new NotResumeError();
     const profile = mergeProfiles(base, llm);
     return {
       profile,
@@ -124,7 +128,8 @@ export async function aiAnalyze(resumeText: string) {
       aiNote: (llm?.summary as string) || "AI-structured parse complete.",
       parsedBy: "ai" as const,
     };
-  } catch {
+  } catch (e) {
+    if (e instanceof NotResumeError) throw e;
     return { profile: base, health: scoreHealth(base, resumeText), aiNote: "Demo fallback — Gemini unreachable.", parsedBy: "local" as const };
   }
 }

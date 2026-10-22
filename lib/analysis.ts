@@ -10,7 +10,7 @@ import {
 import { countMentions, extractJDKeywords, extractSkillsFromText, normalizeSkill } from "./skills";
 
 /** Bump when parser caps/shape change so hash-deduped caches never serve stale rows. */
-export const PARSER_VERSION = 2;
+export const PARSER_VERSION = 3;
 
 const WHY: Record<string, string> = {
   javascript: "Core language for web roles — JDs screen for it first.",
@@ -209,35 +209,132 @@ export function parseResumeText(text: string): ParsedProfile {
   };
 }
 
+const DEGREE = /\b(b\.?\s?tech|b\.?\s?e\.?|b\.?\s?sc|b\.?\s?ca|b\.?\s?com|m\.?\s?tech|m\.?\s?sc|m\.?\s?ca|mba|bachelor|master|diploma|ph\.?d|b\.?\s?s\.?|m\.?\s?s\.?)\b/i;
+const EDU_WORD = /\b(university|college|institute|school of|cgpa|gpa|percentage)\b/i;
+const NON_RESUME = /\b(abstract|invoice|bill to|total due|amount due|terms and conditions|table of contents|lorem ipsum|chapter \d|et al\.|doi:|purchase order|statement of account)\b/gi;
+const ACTION_VERBS = /\b(built|developed|designed|implemented|created|led|launched|deployed|optimi[sz]ed|reduced|improved|increased|automated|integrated|architected|migrated|engineered|delivered|managed|analy[sz]ed|trained|shipped|refactored)\b/gi;
+const METRIC = /\b\d+(?:\.\d+)?\s?(?:%|x\b|k\+?|m\+?|ms\b|users?|customers?|requests?|downloads?|stars?|students?|hrs?|hours?|records?|endpoints?|apis?)|[$₹€£]\s?\d|\b\d{2,}\+/gi;
+
+export interface ResumeGate { ok: boolean; score: number; reasons: string[] }
+
+/**
+ * Weighted resume-likelihood (0–100). Independent signals, so one stray keyword
+ * ("project", "experience") can never pass a random PDF; non-resume markers subtract.
+ * Pass needs >= 40 AND at least one core section or (contact + skills).
+ */
+export function resumeGate(text: string): ResumeGate {
+  const reasons: string[] = [];
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const words = text.split(/\s+/).filter(Boolean).length;
+  if (words < 40) return { ok: false, score: 0, reasons: ["too little text"] };
+
+  const { email, phone, links } = detectContacts(text);
+  const secs = new Set(lines.map(isSectionHeader).filter((s): s is string => !!s));
+  const core = ["education", "experience", "projects", "skills"].filter((s) => secs.has(s)).length;
+  const skills = extractSkillsFromText(text).length;
+  const dates = lines.filter((l) => DATE_RANGE.test(l)).length;
+  const verbs = new Set((text.match(ACTION_VERBS) ?? []).map((v) => v.toLowerCase())).size;
+  const bullets = lines.filter((l) => BULLET_LEAD.test(l)).length;
+  const hasEdu = DEGREE.test(text) && EDU_WORD.test(text);
+  const junk = (text.match(NON_RESUME) ?? []).length;
+
+  let s = 0;
+  if (email) s += 12;
+  if (phone) s += 8;
+  if (links.some((l) => /github|linkedin/.test(l))) s += 6;
+  s += Math.min(core, 3) * 8 + (secs.size > core ? 3 : 0);
+  s += skills >= 6 ? 14 : skills >= 3 ? 8 : skills >= 1 ? 2 : 0;
+  if (hasEdu) s += 10;
+  if (dates) s += Math.min(dates, 2) * 4;
+  if (verbs >= 3) s += 6;
+  if (bullets >= 3) s += 4;
+  s -= junk * 12;
+  if (words > 2500) s -= 15; // papers/reports, not resumes
+  s = Math.max(0, Math.min(100, s));
+
+  if (!email && !phone) reasons.push("no email or phone");
+  if (!core) reasons.push("no Education/Experience/Projects/Skills section");
+  if (skills < 3) reasons.push("fewer than 3 recognisable skills");
+  if (junk) reasons.push("looks like another document type");
+  const ok = s >= 40 && (core >= 1 || (!!(email || phone) && skills >= 3));
+  return { ok, score: s, reasons };
+}
+
+export function looksLikeResume(text: string): boolean {
+  return resumeGate(text).ok;
+}
+
+/**
+ * Rubric score, 100 pts, earned from zero (no free base). Rewards evidence,
+ * not keywords: real metrics, dated experience, degree+year, scoped projects.
+ */
 export function scoreHealth(profile: ParsedProfile, rawText: string): HealthResult {
   const issues: HealthResult["issues"] = [];
   const strengths: string[] = [];
-  let score = 62;
+  let score = 0;
+  const words = rawText.split(/\s+/).filter(Boolean).length;
+  const lines = rawText.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const issue = (section: string, severity: "critical" | "warn" | "good", message: string, fix: string) => issues.push({ section, severity, message, fix });
 
-  if (profile.skills.length >= 6) { score += 10; strengths.push(`${profile.skills.length} detectable skills`); }
-  else issues.push({ section: "Skills", severity: profile.skills.length === 0 ? "critical" : "warn", message: `Only ${profile.skills.length} skills detected`, fix: "Add a Skills section with 8–12 job-relevant keywords." });
+  // Contact (8)
+  const { email, phone, links } = detectContacts(rawText);
+  if (email) score += 4; else issue("Contact", "critical", "No email found", "Add a professional email in the header.");
+  if (phone) score += 2; else issue("Contact", "warn", "No phone number", "Add a reachable phone number.");
+  if (links.some((l) => /github|linkedin/.test(l)) || /linkedin|github|portfolio/i.test(rawText)) { score += 2; strengths.push("Profile links present"); }
+  else issue("Links", "warn", "No GitHub/LinkedIn/portfolio links", "Add live links — recruiters click them.");
 
-  if (profile.projects.length >= 2) { score += 8; strengths.push("2+ projects show build ability"); }
-  else issues.push({ section: "Projects", severity: "warn", message: "Fewer than 2 projects with outcomes", fix: "Add 2 projects with stack + metric (e.g. cut load time 40%)." });
+  // Skills (16)
+  const nSkills = profile.skills.length;
+  score += Math.min(16, Math.round(nSkills * 1.6));
+  if (nSkills >= 8) strengths.push(`${nSkills} detectable skills`);
+  else issue("Skills", nSkills < 3 ? "critical" : "warn", `Only ${nSkills} skills detected`, "Add a Skills section with 8–12 job-relevant keywords.");
 
-  if (profile.experience.length >= 1) { score += 6; strengths.push("Experience present"); }
-  else issues.push({ section: "Experience", severity: "warn", message: "No internship/experience bullets", fix: "Add internship, freelance, or club work — even 1 entry helps." });
+  // Projects (18): substance counts, one-liners don't
+  const solid = profile.projects.filter((p) => p.length >= 60).length;
+  score += Math.min(18, solid * 6 + Math.max(0, profile.projects.length - solid) * 1);
+  if (solid >= 2) strengths.push(`${solid} detailed projects show build ability`);
+  else issue("Projects", "warn", solid ? "Only 1 project with real detail" : "No detailed projects", "Add 2 projects with stack + outcome (e.g. cut load time 40%).");
 
-  if (profile.education.length && !profile.education[0].startsWith("Add")) { score += 4; }
-  else issues.push({ section: "Education", severity: "warn", message: "Education vague", fix: "Degree + college + year + CGPA on one line." });
+  // Experience (14)
+  const exp = profile.experience.length;
+  const datedExp = profile.experience.filter((e) => DATE_RANGE.test(e)).length;
+  if (exp) { score += 8 + (exp >= 2 || datedExp ? 6 : 0); strengths.push("Experience present"); }
+  else issue("Experience", "warn", "No internship/experience entries", "Add internship, freelance, or club work — even 1 entry helps.");
+  if (exp && !datedExp) issue("Experience", "warn", "Experience has no dates", "Add 'Mon YYYY – Mon YYYY' to each role.");
 
-  if (/\d+%|\d+x|reduced|improved|built|shipped/i.test(rawText)) { score += 5; strengths.push("Quantified impact found"); }
-  else issues.push({ section: "Impact", severity: "warn", message: "No numbers or outcomes", fix: "Add 3 metrics: users, speed, accuracy, downloads." });
+  // Education (10)
+  const edu = profile.education.join(" ");
+  const eduReal = profile.education.length > 0 && !profile.education[0].startsWith("Add");
+  if (eduReal) {
+    if (DEGREE.test(edu) || EDU_WORD.test(edu)) score += 5;
+    if (/(19|20)\d{2}/.test(edu) || /cgpa|gpa|\d\.\d|\d+\s?%/i.test(edu)) score += 5;
+  }
+  if (score === 0 || !eduReal || !(/(19|20)\d{2}/.test(edu))) issue("Education", "warn", "Education incomplete", "Degree + college + year + CGPA on one line.");
 
-  if (rawText.length < 800) issues.push({ section: "Depth", severity: "critical", message: "Resume very short (<800 chars)", fix: "Aim for 1 full page — add projects + skills." });
-  if (rawText.length > 6000) { score -= 4; issues.push({ section: "Length", severity: "warn", message: "Overlong — recruiters skim", fix: "Cut to 1 page, keep newest 3 items." }); }
+  // Impact (14): real metrics only; "built"/"improved" alone earn nothing here
+  const metrics = (rawText.match(METRIC) ?? []).length;
+  score += metrics >= 3 ? 14 : metrics === 2 ? 9 : metrics === 1 ? 5 : 0;
+  if (metrics >= 3) strengths.push("Quantified impact found");
+  else issue("Impact", "warn", metrics ? "Few measurable results" : "No numbers or outcomes", "Add 3 metrics: users, speed, accuracy, downloads.");
 
-  if (profile.certifications.length) { score += 3; strengths.push("Certifications verify learning"); }
-  if (/linkedin|github|portfolio/i.test(rawText)) { score += 2; strengths.push("Links present"); }
-  else issues.push({ section: "Links", severity: "warn", message: "No GitHub/LinkedIn/portfolio links", fix: "Add live links — JDs click them." });
+  // Action verbs (6)
+  const verbs = new Set((rawText.match(ACTION_VERBS) ?? []).map((v) => v.toLowerCase())).size;
+  if (verbs >= 4) { score += 6; strengths.push("Strong action verbs"); }
+  else { score += verbs; issue("Wording", "warn", "Weak or repeated verbs", "Start bullets with built/led/reduced/shipped."); }
 
-  score = Math.max(18, Math.min(96, score));
-  return { score, issues, strengths };
+  // Certifications (4), structure (4)
+  if (profile.certifications.length) { score += 4; strengths.push("Certifications verify learning"); }
+  const secs = new Set(lines.map(isSectionHeader).filter(Boolean)).size;
+  if (secs >= 4) score += 4; else if (secs >= 2) score += 2;
+  else issue("Structure", "warn", "Few clear section headings", "Use standard headings: Education, Skills, Projects, Experience.");
+
+  // Length (6)
+  if (words >= 250 && words <= 900) score += 6;
+  else if (words >= 150 && words <= 1200) score += 3;
+  if (words < 250) issue("Depth", words < 150 ? "critical" : "warn", `Resume very short (${words} words)`, "Aim for 1 full page — add projects + skills.");
+  if (words > 1200) issue("Length", "warn", "Overlong — recruiters skim", "Cut to 1 page, keep newest 3 items.");
+
+  return { score: Math.max(8, Math.min(96, Math.round(score))), issues, strengths };
 }
 
 export function matchJob(profile: ParsedProfile, jd: string, title = "Target role", company = "Company"): JobMatch {
